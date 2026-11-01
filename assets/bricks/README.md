@@ -7,11 +7,12 @@
 - `Body` — обычные блоки, цвет из вершин;
 - `Glow` — светящиеся блоки (трещины метеорита, сам кристалл). В игре им ставится материал Neon и цвет редкости.
 
-| Файл | Треугольников (Body + Glow) |
+| Файл | Откуда |
 | --- | --- |
-| `brick_meteor_small.glb` | 982 + 226 |
-| `brick_meteor_medium.glb` | 1862 + 716 |
-| `brick_meteor_large.glb` | 2888 + 946 |
-| `brick_crystal.glb` | 624 + 1080 |
+| `brick_meteor_small.glb`, `brick_meteor_medium.glb`, `brick_meteor_large.glb` | `tools/gen_bricks.py` |
+| `brick_crystal.glb` | `tools/gen_bricks.py` |
+| `legendary_meteor.glb` | `assets/vox/legendary_meteor.vox` → `tools/vox2glb.py` (сам `.vox` сделан `tools/models/hero_meteor.py`) |
+
+Конвертер из MagicaVoxel: `python3 tools/vox2glb.py assets/vox/<имя>.vox assets/bricks/<имя>.glb`. Он предупреждает, если в сетке больше ~20 000 треугольников.
 
 Не проверено в Studio: сохранит ли импорт цвета вершин. Проверить при первом импорте.

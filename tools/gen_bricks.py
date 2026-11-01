@@ -6,8 +6,7 @@ Each model is a GLB with up to two meshes: 'Body' (vertex-colored bricks) and 'G
 import sys, json, struct, pathlib
 import numpy as np
 
-OUT = pathlib.Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
-GAP, STUD_R, STUD_H, SEG = 0.035, 0.3, 0.2, 10
+GAP, STUD_R, STUD_H, SEG = 0.0, 0.3, 0.2, 10
 
 def hexrgb(h):
     h = h.lstrip('#'); return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
@@ -119,6 +118,7 @@ def write_glb(path, meshes):
     for name, m, mat in meshes:
         if m.count() == 0: continue
         P = np.array(m.p, np.float32); N = np.array(m.n, np.float32); C = np.array(m.c, np.float32)
+        C = np.where(C <= 0.04045, C / 12.92, ((C + 0.055) / 1.055) ** 2.4).astype(np.float32)  # glTF vertex colors are linear
         ip = add(P, 34962, 5126, "VEC3", True); inn = add(N, 34962, 5126, "VEC3"); ic = add(C, 34962, 5126, "VEC3")
         idx = add(np.arange(len(P), dtype=np.uint32), 34963, 5125, "SCALAR")
         gl_meshes.append({"name": name, "primitives": [{"attributes": {"POSITION": ip, "NORMAL": inn, "COLOR_0": ic}, "indices": idx, "material": mat}]})
@@ -130,10 +130,16 @@ def write_glb(path, meshes):
     out = struct.pack('<III', 0x46546C67, 2, 12 + 8 + len(js) + 8 + len(bufs)) + struct.pack('<II', len(js), 0x4E4F534A) + js + struct.pack('<II', len(bufs), 0x004E4942) + bytes(bufs)
     path.write_bytes(out)
 
-for name, (vox, rng) in {
-    "brick_meteor_small": meteor_voxels(3, 3.2), "brick_meteor_medium": meteor_voxels(7, 4.2), "brick_meteor_large": meteor_voxels(19, 5.2),
-    "brick_crystal": crystal_voxels(5),
-}.items():
-    body, glow = build(vox, rng)
-    write_glb(OUT / f"{name}.glb", [("Body", body, 0), ("Glow", glow, 1)])
-    print(f"{name}: body {body.count()} tris, glow {glow.count()} tris")
+def main():
+    OUT = pathlib.Path(sys.argv[1]); OUT.mkdir(parents=True, exist_ok=True)
+    for name, (vox, rng) in {
+        "brick_meteor_small": meteor_voxels(3, 3.2), "brick_meteor_medium": meteor_voxels(7, 4.2), "brick_meteor_large": meteor_voxels(19, 5.2),
+        "brick_crystal": crystal_voxels(5),
+    }.items():
+        body, glow = build(vox, rng)
+        write_glb(OUT / f"{name}.glb", [("Body", body, 0), ("Glow", glow, 1)])
+        print(f"{name}: body {body.count()} tris, glow {glow.count()} tris")
+
+
+if __name__ == "__main__":
+    main()
