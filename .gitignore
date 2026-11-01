@@ -1,0 +1,9 @@
+# Пробные сборки Rojo
+build/
+
+# Файлы блокировки Studio
+*.rbxl.lock
+*.rbxlx.lock
+
+# Генерируется инструментами
+sourcemap.json
