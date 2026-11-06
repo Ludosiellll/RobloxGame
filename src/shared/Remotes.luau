@@ -28,6 +28,7 @@ Remotes.Names = {
 	"Equip", -- клиент → сервер: (uid, on) взять или убрать питомца
 	"PetInventory", -- сервер → клиент: { pets, equipped }
 	"Hatched", -- сервер → клиент: { egg, pet } для анимации вылупления
+	"Run", -- клиент → сервер: «бегу на дорожке» (сервер всё равно проверяет, что игрок на ленте)
 }
 
 local function getFolder(): Instance
