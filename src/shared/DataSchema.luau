@@ -5,6 +5,7 @@ local Config = require(script.Parent.Config)
 local Rarity = require(script.Parent.Rarity)
 local Creatures = require(script.Parent.Catalog.Creatures)
 local Economy = require(script.Parent.Economy)
+local PetCatalog = require(script.Parent.Catalog.Pets)
 
 export type Owned = { id: string, mutation: string? }
 
@@ -19,6 +20,9 @@ export type PlayerSave = {
 	collection: { [string]: boolean },
 	stats: { caught: number, pushes: number, bestCatch: number, earned: number },
 	indexClaimed: { [string]: boolean },
+	pets: { { uid: number, id: string } },
+	equipped: { number },
+	nextPetUid: number,
 	lastOnline: number,
 	receipts: { string },
 	settings: { [string]: any },
@@ -41,6 +45,9 @@ function DataSchema.default(): PlayerSave
 		collection = {},
 		stats = { caught = 0, pushes = 0, bestCatch = 0, earned = 0 },
 		indexClaimed = {},
+		pets = {},
+		equipped = {},
+		nextPetUid = 1,
 		lastOnline = 0,
 		receipts = {},
 		settings = {},
@@ -78,7 +85,7 @@ end
 function DataSchema.sanitize(save: PlayerSave): PlayerSave
 	save.money = wholeNonNegative(save.money)
 	save.rebirths = wholeNonNegative(save.rebirths)
-	save.speed = wholeNonNegative(save.speed)
+	save.speed = if type(save.speed) == "number" and save.speed == save.speed and save.speed > 0 then math.floor(save.speed * 100 + 1e-6) / 100 else 0
 	save.strength = math.min(wholeNonNegative(save.strength), Config.Carry.StrengthMaxLevel)
 	save.slots = math.clamp(wholeNonNegative(save.slots), Config.Base.SlotsStart, Config.Base.SlotsMax)
 	save.lastOnline = wholeNonNegative(save.lastOnline)
@@ -124,6 +131,33 @@ function DataSchema.sanitize(save: PlayerSave): PlayerSave
 		end
 	end
 	save.indexClaimed = claimed
+
+	local pets: { { uid: number, id: string } } = {}
+	local uids: { [number]: boolean } = {}
+	local maxUid = 0
+	if type(save.pets) == "table" then
+		for _, p in save.pets do
+			if #pets >= Config.Pets.MaxOwned then
+				break
+			end
+			if type(p) == "table" and type(p.uid) == "number" and p.uid >= 1 and p.uid == math.floor(p.uid) and not uids[p.uid] and type(p.id) == "string" and PetCatalog.byId(p.id) then
+				uids[p.uid] = true
+				maxUid = math.max(maxUid, p.uid)
+				table.insert(pets, { uid = p.uid, id = p.id })
+			end
+		end
+	end
+	save.pets = pets
+	local equipped: { number } = {}
+	if type(save.equipped) == "table" then
+		for _, uid in save.equipped do
+			if #equipped < Config.Pets.Equipped and uids[uid] and not table.find(equipped, uid) then
+				table.insert(equipped, uid)
+			end
+		end
+	end
+	save.equipped = equipped
+	save.nextPetUid = math.max(wholeNonNegative(save.nextPetUid), maxUid + 1, 1)
 
 	local receipts: { string } = {}
 	if type(save.receipts) == "table" then

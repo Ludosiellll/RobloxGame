@@ -79,6 +79,17 @@ return {
 	-- Награда за полностью собранную редкость в индексе.
 	IndexRewards = { Common = 1000, Rare = 5000, Epic = 25000, Legendary = 100000, Mythic = 500000, Secret = 2000000 },
 
+	-- Питомцы: сколько ходит с игроком, сколько можно держать, бонус по редкости, веса вылупления.
+	Pets = {
+		Equipped = 3,
+		MaxOwned = 60,
+		Bonus = { Common = 0.05, Rare = 0.10, Epic = 0.20, Legendary = 0.35, Mythic = 0.60, Secret = 1.00 },
+		Weight = { Common = 60, Rare = 25, Epic = 10, Legendary = 4, Mythic = 0.9, Secret = 0.1 },
+	},
+
+	-- Беговые дорожки: уровень k даёт Base × Growth^(k−1) скорости в секунду бега.
+	Treadmill = { Tiers = 15, Base = 0.2, Growth = 1.5, PerBase = 3 },
+
 	Leaderboard = {
 		RefreshSeconds = 120,
 		Top = 10,
