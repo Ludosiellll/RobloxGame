@@ -16,7 +16,7 @@ Rojo переносит сам и точно: все скрипты, эффек�
 
 1. **Брейнроты.** Правой кнопкой по `ServerStorage` → **Insert from File…** → `assets\packs\Brainrots.rbxm`. Появится `Brainrot Pack!` — не переименовывай.
 2. **Питомцы.** В `ReplicatedStorage` создай папку `Packs` (Insert Object → Folder), внутри неё папку `Pets`. Правой кнопкой по `Pets` → **Insert from File…** → `assets\imported\KNOCK OUT MODELS BY HEX.rbxm`. Деталь `WorkBaseplate` удали.
-3. **Биомы.** Правой кнопкой по `Workspace` → Insert Object → **Folder**, назови `Biomes`. Правой кнопкой по `Biomes` → **Insert from File…** → выдели все 17 файлов в `assets\biomes` → Открыть.
+3. **Биомы.** Правой кнопкой по `Workspace` → **Insert from File…** → `assets\biomes\Biomes.rbxmx` (один файл, 82 МБ, Studio может подумать полминуты). Появится `Workspace.Biomes` с 17 биомами.
 
 ## 3. Кратер
 
