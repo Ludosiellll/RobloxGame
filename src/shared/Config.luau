@@ -2,6 +2,9 @@
 -- Все числа игры. Баланс правится здесь.
 -- Координаты — таблицы чисел, а не Vector3, чтобы модуль работал и в тестах вне Roblox.
 
+-- Масштаб кратера (см. Crater.Scale).
+local CRATER_SCALE = 0.4
+
 return {
 	Version = "0.1.0",
 
@@ -144,27 +147,30 @@ return {
 
 	-- Карта — гигантский кратер с центром в начале координат (studs).
 	Crater = {
-		PlainRadius = 2500, -- равнина вокруг кратера
-		RimRadius = 1950, -- край кратера
+		-- Все размеры кратера умножаются на Scale: 1 — исходный размер (около 80 с бега от базы до ядра),
+		-- 0.4 — после проверки Дениса 2026-11-06 «карта огромная» (около 30 с). Углы склонов от масштаба не зависят.
+		Scale = CRATER_SCALE,
+		PlainRadius = 2500 * CRATER_SCALE, -- равнина вокруг кратера
+		RimRadius = 1950 * CRATER_SCALE, -- край кратера
 		RimY = 0,
-		BaseRadius = 2120, -- базы по кругу на краю
+		BaseRadius = 2120 * CRATER_SCALE, -- базы по кругу на краю
 		BaseCount = 8,
 		Rings = {
-			{ zones = { 1, 2, 3, 4 }, inner = 1380, outer = 1800, y = -60, startDeg = 45 },
-			{ zones = { 5, 6, 7, 8, 9, 10 }, inner = 880, outer = 1300, y = -150, startDeg = 30 },
-			{ zones = { 11, 12, 13, 14 }, inner = 480, outer = 800, y = -240, startDeg = 45 },
+			{ zones = { 1, 2, 3, 4 }, inner = 1380 * CRATER_SCALE, outer = 1800 * CRATER_SCALE, y = -60 * CRATER_SCALE, startDeg = 45 },
+			{ zones = { 5, 6, 7, 8, 9, 10 }, inner = 880 * CRATER_SCALE, outer = 1300 * CRATER_SCALE, y = -150 * CRATER_SCALE, startDeg = 30 },
+			{ zones = { 11, 12, 13, 14 }, inner = 480 * CRATER_SCALE, outer = 800 * CRATER_SCALE, y = -240 * CRATER_SCALE, startDeg = 45 },
 		},
-		Moat = { inner = 400, outer = 480 }, -- лавовый обрыв между кольцом 3 и ядром (круче MaxSlopeAngle)
-		Core = { zone = 17, radius = 400, y = -330 },
+		Moat = { inner = 400 * CRATER_SCALE, outer = 480 * CRATER_SCALE }, -- лавовый обрыв между кольцом 3 и ядром (круче MaxSlopeAngle)
+		Core = { zone = 17, radius = 400 * CRATER_SCALE, y = -330 * CRATER_SCALE },
 		Paths = { { zone = 15, deg = 67.5 }, { zone = 16, deg = 247.5 } }, -- дамбы через ров к ядру
-		PathWidth = 80,
-		PathOverhang = 20, -- дамба заходит на кольцо 3 и в ядро на столько studs
-		Ramps = { perTransition = 8, startDeg = 22.5, width = 70, overhang = 24 },
-		Geysers = { perTransition = 8, startDeg = 0, inset = 30, overshoot = 25 },
+		PathWidth = 80 * CRATER_SCALE,
+		PathOverhang = 20 * CRATER_SCALE, -- дамба заходит на кольцо 3 и в ядро на столько studs
+		Ramps = { perTransition = 8, startDeg = 22.5, width = 70 * CRATER_SCALE, overhang = 24 * CRATER_SCALE },
+		Geysers = { perTransition = 8, startDeg = 0, inset = 30 * CRATER_SCALE, overshoot = 25 * CRATER_SCALE },
 		MaxSlopeAngle = 40, -- круче персонаж не заходит: обрывы между кольцами только через спуски и гейзеры
 		ChunkLength = 125, -- длина куска биома, который раскладывается по дуге
 		SkipNames = { "Wall", "EndWall", "1", "2", "3", "Ground", "GrassTop" },
-		SpawnMargin = 20,
+		SpawnMargin = 20 * CRATER_SCALE,
 		-- Материал Terrain для пола каждого сектора (имена Enum.Material).
 		ZoneMaterials = {
 			Forest = "LeafyGrass",
@@ -186,7 +192,7 @@ return {
 			NuclearWasteland = "Basalt",
 		},
 		Materials = {
-			Plain = "Grass",
+			Plain = "Ground", -- без травы: декоративная трава прорастает сквозь пол баз
 			Slope = "Ground",
 			Cliff = "Rock",
 			Moat = "CrackedLava",

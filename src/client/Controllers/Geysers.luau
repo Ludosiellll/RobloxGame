@@ -14,7 +14,7 @@ local Geysers = {}
 
 local player = Players.LocalPlayer
 local FLIGHT_TIME = 1.5
-local LANDING_INSET = 30
+local LANDING_INSET = Config.Crater.Geysers.inset -- садимся чуть дальше края яруса
 local busyUntil = 0
 
 -- Ярус, на который ведёт гейзер с высотой назначения toY.

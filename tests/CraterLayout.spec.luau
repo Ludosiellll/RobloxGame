@@ -3,10 +3,12 @@
 
 local Shared = game:GetService("ReplicatedStorage").Shared
 local Layout = require(Shared.CraterLayout) :: any
+-- Числа в тестах — исходные размеры кратера; K переводит их в текущий масштаб (Config.Crater.Scale).
+local K = (require(Shared.Config) :: any).Crater.Scale
 
 local function at(r: number, deg: number): (number, number)
 	local a = math.rad(deg)
-	return math.cos(a) * r, math.sin(a) * r
+	return math.cos(a) * r * K, math.sin(a) * r * K
 end
 
 -- детерминированный генератор для тестов
@@ -20,22 +22,22 @@ end
 
 return function(t: any)
 	t.test("height profile", function()
-		t.eq(Layout.heightAt(2200), 0)
-		t.eq(Layout.heightAt(3000), 0)
-		t.eq(Layout.heightAt(1600), -60)
-		t.eq(Layout.heightAt(1000), -150)
-		t.eq(Layout.heightAt(600), -240)
-		t.eq(Layout.heightAt(100), -330)
-		t.near(Layout.heightAt(1875), -30)
+		t.eq(Layout.heightAt(2200 * K), 0)
+		t.eq(Layout.heightAt(3000 * K), 0)
+		t.near(Layout.heightAt(1600 * K), -60 * K)
+		t.near(Layout.heightAt(1000 * K), -150 * K)
+		t.near(Layout.heightAt(600 * K), -240 * K)
+		t.near(Layout.heightAt(100 * K), -330 * K)
+		t.near(Layout.heightAt(1875 * K), -30 * K)
 	end)
 
 	t.test("opening radius inverts height", function()
-		t.eq(Layout.openingRadius(-60), 1800)
-		t.eq(Layout.openingRadius(-150), 1300)
-		t.eq(Layout.openingRadius(-240), 800)
-		t.eq(Layout.openingRadius(-330), 400)
-		t.near(Layout.openingRadius(-30), 1875)
-		t.eq(Layout.openingRadius(-400), 0)
+		t.near(Layout.openingRadius(-60 * K), 1800 * K)
+		t.near(Layout.openingRadius(-150 * K), 1300 * K)
+		t.near(Layout.openingRadius(-240 * K), 800 * K)
+		t.near(Layout.openingRadius(-330 * K), 400 * K)
+		t.near(Layout.openingRadius(-30 * K), 1875 * K)
+		t.eq(Layout.openingRadius(-400 * K), 0)
 	end)
 
 	t.test("zone by ring and sector", function()
@@ -85,7 +87,7 @@ return function(t: any)
 		local bases = Layout.bases()
 		t.eq(#bases, 8)
 		for i, b in bases do
-			t.near(math.sqrt(b.x * b.x + b.z * b.z), 2120, 1e-6)
+			t.near(math.sqrt(b.x * b.x + b.z * b.z), 2120 * K, 1e-6)
 			t.near(b.angle, math.rad((i - 1) * 45), 1e-9)
 		end
 	end)

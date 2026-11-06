@@ -328,6 +328,8 @@ function CraterBuilder.build(): { [string]: any }
 	end
 	local root = folder("Crater", workspace)
 	print("[Crater] terrain…")
+	-- декоративная трава Terrain прорастает сквозь пол баз и тяжела для телефонов
+	workspace.Terrain.Decoration = false
 	buildTerrain()
 	local stats: { [string]: any } = { parts = 0, zones = {} }
 	if source then
