@@ -4,6 +4,7 @@
 -- Чистый модуль: только числа, без Roblox API. Угол — atan2(z, x) в [0, 2π).
 
 local Config = require(script.Parent.Config)
+local Zones = require(script.Parent.Zones)
 
 local C = Config.Crater
 local TAU = 2 * math.pi
@@ -231,6 +232,66 @@ function CraterLayout.geysers(): { { x: number, z: number, y: number, toY: numbe
 		end
 	end
 	return out
+end
+
+-- Можно ли игроку с этим числом перерождений быть в зоне (nil — край, склоны, обрывы — можно).
+function CraterLayout.canEnter(rebirths: number, zone: number?): boolean
+	if zone == nil then
+		return true
+	end
+	local def = Zones.List[zone]
+	return def == nil or rebirths >= def.gate
+end
+
+export type Wall = {
+	kind: "radial" | "ramp" | "path" | "core",
+	zone: number,
+	gate: number,
+	angle: number,
+	inner: number?, -- radial: от какого радиуса
+	outer: number?, -- radial: до какого радиуса
+	r: number?, -- ramp/path/core: радиус поперечной стены
+	width: number?, -- ramp/path/core: ширина поперечной стены
+	bottomY: number,
+	topY: number,
+}
+
+-- Стены ворот для игрока с этим числом перерождений: границы закрытых секторов, низ спусков,
+-- верх дамб и вход в ядро. Сервер всё равно возвращает того, кто прошёл мимо стен.
+function CraterLayout.gateWalls(rebirths: number): { Wall }
+	local walls: { Wall } = {}
+	local seen: { [string]: boolean } = {}
+	for ringIndex, ring in C.Rings do
+		for slot, zone in ring.zones do
+			if not CraterLayout.canEnter(rebirths, zone) then
+				local s = ringSector(ringIndex, slot)
+				for _, a in { s.a0, s.a1 } do
+					local key = ringIndex .. ":" .. string.format("%.4f", wrap(a))
+					if not seen[key] then
+						seen[key] = true
+						table.insert(walls, { kind = "radial", zone = zone, gate = Zones.List[zone].gate, angle = a, inner = ring.inner, outer = ring.outer, bottomY = ring.y - 4, topY = ring.y + 60 })
+					end
+				end
+			end
+		end
+	end
+	for _, ramp in CraterLayout.ramps() do
+		local landR = ramp.toR - 10
+		local zone = CraterLayout.zoneAt(math.cos(ramp.angle) * landR, math.sin(ramp.angle) * landR)
+		if zone and not CraterLayout.canEnter(rebirths, zone) then
+			table.insert(walls, { kind = "ramp", zone = zone, gate = Zones.List[zone].gate, angle = ramp.angle, r = ramp.toR - 8, width = C.Ramps.width + 10, bottomY = ramp.toY - 4, topY = ramp.toY + 40 })
+		end
+	end
+	local coreLocked = not CraterLayout.canEnter(rebirths, C.Core.zone)
+	for _, path in CraterLayout.paths() do
+		if not CraterLayout.canEnter(rebirths, path.zone) then
+			table.insert(walls, { kind = "path", zone = path.zone, gate = Zones.List[path.zone].gate, angle = path.angle, r = C.Moat.outer + 5, width = C.PathWidth + 10, bottomY = path.fromY - 4, topY = path.fromY + 40 })
+		end
+		if coreLocked then
+			table.insert(walls, { kind = "core", zone = C.Core.zone, gate = Zones.List[C.Core.zone].gate, angle = path.angle, r = C.Moat.inner - 5, width = C.PathWidth + 10, bottomY = path.toY - 4, topY = path.toY + 40 })
+		end
+	end
+	return walls
 end
 
 return CraterLayout

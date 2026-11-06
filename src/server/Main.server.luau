@@ -24,5 +24,6 @@ Remotes.init()
 start("AssetCheck")
 start("PlayerData")
 start("DebugService")
+start("MapService")
 
 print(`[Server] Meteor Rain {Config.Version} started`)

@@ -17,6 +17,8 @@ local function start(name: string)
 	end
 end
 
+start("Gates")
+start("Geysers")
 start("DebugPanel")
 
 print(`[Client] Meteor Rain {Config.Version} started`)
