@@ -3,9 +3,10 @@ and save it as an XML model (.rbxmx) that Rojo can sync.
 
   python tools/rbxl_to_rbxmx.py INPUT.rbxl "ReplicatedStorage/FireballVFX" OUTPUT.rbxmx [--skip-class MeshPart ...]
 
-Scripts are never copied. Properties that only matter to Studio or that older Rojo can't read are dropped
-(UniqueId, HistoryId, Capabilities, Tags saved as SharedString, WorldPivotData, EmissiveMaskContent, ...):
-the instances fall back to defaults for those. Needs lz4 and zstandard.
+Scripts are never copied. Everything else is transferred exactly, including custom physics, model pivots
+(WorldPivotData), tags and capabilities. Only identity ids that Studio regenerates on every insert (UniqueId,
+HistoryId) are left out, plus properties that are empty/default in the source (the tool checks this and
+reports anything non-default it could not transfer, so a clean run means an exact copy). Needs lz4 and zstandard.
 """
 import base64
 import pathlib
@@ -17,8 +18,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import rbx_inspect as R  # noqa: E402
 
 SCRIPTS = {"Script", "LocalScript", "ModuleScript"}
-DROP = {"UniqueId", "HistoryId", "Capabilities", "WorldPivotData", "EmissiveMaskContent", "SerializedOverrides",
-        "DefinesCapabilities", "ScriptGuid", "SourceAssetId", "Tags", "VoxelGridAssetContentMap"}
+# Studio regenerates these on every insert, so they are never part of a copy.
+REGENERATED = {"UniqueId", "HistoryId", "ScriptGuid"}
+# Dropped only when every value is empty/default (checked; anything else is reported).
+DEFAULT_ONLY = {"EmissiveMaskContent", "SerializedOverrides", "VoxelGridAssetContentMap"}
+DROP = REGENERATED
+# Значение по умолчанию не пишем: результат тот же, а Rojo не пытается задать свойства, которые плагину
+# менять нельзя (Capabilities). Не по умолчанию — пишем и сообщаем.
+OMIT_IF = {"Capabilities": "0", "DefinesCapabilities": "false", "Tags": "", "AttributesSerialize": ""}
 CONTENT = {"Texture", "TextureID", "TextureId", "MeshId", "SoundId", "AnimationId", "Image", "HoverImage", "PressedImage",
            "ColorMap", "NormalMap", "MetalnessMap", "RoughnessMap", "LinkedSource", "CageMeshId", "SkyboxBk", "SkyboxDn",
            "SkyboxFt", "SkyboxLf", "SkyboxRt", "SkyboxUp", "SunTextureId", "MoonTextureId", "CursorIcon", "AssetId",
@@ -114,14 +121,16 @@ def decode(ptype: int, body: bytes, n: int, sstr):
         for _ in range(n):
             flag = body[q]
             q += 1
-            if flag == 0:
+            # bit 0 — свои значения есть; bit 1 — новый формат (за ними ещё AcousticAbsorption)
+            if flag & 1 == 0:
                 out.append(("PhysicalProperties", "<CustomPhysics>false</CustomPhysics>"))
             else:
                 count = 6 if flag & 2 else 5
                 v = struct.unpack(f"<{count}f", body[q:q + 4 * count])
                 q += 4 * count
+                keys = ("Density", "Friction", "Elasticity", "FrictionWeight", "ElasticityWeight", "AcousticAbsorption")
                 out.append(("PhysicalProperties", "<CustomPhysics>true</CustomPhysics>" + "".join(
-                    f"<{k}>{f32(x)}</{k}>" for k, x in zip(("Density", "Friction", "Elasticity", "FrictionWeight", "ElasticityWeight"), v))))
+                    f"<{k}>{f32(x)}</{k}>" for k, x in zip(keys, v))))
         return out
     if ptype == 0x1A:
         r, g, b = body[:n], body[n:2 * n], body[2 * n:3 * n]
@@ -130,6 +139,17 @@ def decode(ptype: int, body: bytes, n: int, sstr):
         return [("int64", str(v)) for v in interleave_u64(body, n)]
     if ptype == 0x1C:
         return [("SharedString", sstr[i][0]) for i in R._uints(body, n)]
+    if ptype == 0x1E:
+        # 0x10 + CFrame-массив, затем 0x02 + флаги «значение есть»
+        assert body[0] == 0x10, "optional cframe layout"
+        frames = decode_cframes(body[1:], n)
+        size = cframes_size(body[1:], n)
+        has = body[1 + size + 1:1 + size + 1 + n]
+        return [("OptionalCoordinateFrame", f"<CFrame>{f}</CFrame>" if h else "") for f, h in zip(frames, has)]
+    if ptype == 0x21:
+        return [("SecurityCapabilities", str(v)) for v in interleave_u64(body, n)]
+    if ptype in (0x22, 0x23):
+        return [("__unsupported", body) for _ in range(n)]
     if ptype == 0x20:
         out, q = [], 0
         for _ in range(n):
@@ -144,6 +164,13 @@ def decode(ptype: int, body: bytes, n: int, sstr):
             out.append(("Font", f"<Family><url>{escape(fam)}</url></Family><Weight>{weight}</Weight><Style>{'Italic' if style == 1 else 'Normal'}</Style>"))
         return out
     return None
+
+
+def cframes_size(body: bytes, n: int) -> int:
+    q = 0
+    for _ in range(n):
+        q += 37 if body[q] == 0 else 1
+    return q + 12 * n
 
 
 def decode_cframes(body: bytes, n: int):
@@ -177,6 +204,7 @@ def load(path: pathlib.Path):
     data = path.read_bytes()
     assert data[:8] == b"<roblox!", "binary Roblox file expected"
     classes, insts, sstr, parent = {}, {}, [], {}
+    problems = []
     pos = 32
     while pos < len(data):
         name = data[pos:pos + 4]
@@ -220,10 +248,15 @@ def load(path: pathlib.Path):
             try:
                 vals = decode(ptype, chunk[9 + ln:], len(refs), sstr)
             except Exception as err:  # noqa: BLE001
-                print(f"skip {cname}.{pname} (type 0x{ptype:02X}): {err}", file=sys.stderr)
+                problems.append(f"{cname}.{pname} (type 0x{ptype:02X}): {err}")
                 continue
             if vals is None:
+                problems.append(f"{cname}.{pname}: unknown type 0x{ptype:02X}")
                 continue
+            if pname == "Tags" and vals and vals[0][0] == "SharedString":
+                # теги в новом формате хранятся как общая строка — в XML это BinaryString
+                lookup = dict(sstr)
+                vals = [("BinaryString", base64.b64encode(lookup.get(key, b"")).decode()) for _, key in vals]
             for r, v in zip(refs, vals):
                 insts[r]["props"][pname] = v
         elif name == b"PRNT":
@@ -235,7 +268,7 @@ def load(path: pathlib.Path):
                 if pr in insts:
                     insts[pr]["children"].append(k)
     roots = [r for r in insts if parent.get(r, -1) not in insts]
-    return insts, roots, sstr
+    return insts, roots, sstr, problems
 
 
 def find(insts, roots, path: str):
@@ -251,6 +284,7 @@ def find(insts, roots, path: str):
 
 def write(insts, root: int, sstr, out: pathlib.Path, skip: set):
     keep = []
+    unsupported, lossy = set(), set()
 
     def collect(r):
         cls = insts[r]["class"]
@@ -269,6 +303,16 @@ def write(insts, root: int, sstr, out: pathlib.Path, skip: set):
         inst = insts[r]
         lines.append(f'<Item class="{inst["class"]}" referent="{ids[r]}"><Properties>')
         for name, (tag, value) in sorted(inst["props"].items()):
+            if name in OMIT_IF and value == (OMIT_IF[name].encode() if isinstance(value, bytes) else OMIT_IF[name]):
+                continue
+            if name in ("Capabilities", "DefinesCapabilities"):
+                lossy.add(f"{inst['class']}.{name} = {value} (plugins may not be allowed to set it)")
+            if tag == "__unsupported" or (name in DEFAULT_ONLY and tag in ("string", "BinaryString") and not value):
+                if tag == "__unsupported":
+                    unsupported.add(f"{inst['class']}.{name}")
+                continue
+            if name in DEFAULT_ONLY and value:
+                lossy.add(f"{inst['class']}.{name}")
             if tag == "string":
                 if name in CONTENT:
                     text = value.decode("utf-8", "replace")
@@ -279,6 +323,10 @@ def write(insts, root: int, sstr, out: pathlib.Path, skip: set):
                     lines.append(f'<string name="{name}">{escape(value.decode("utf-8", "replace"))}</string>')
             elif tag == "Ref":
                 lines.append(f'<Ref name="{name}">{ids.get(value, "null")}</Ref>')
+            elif tag == "BinaryString":
+                lines.append(f'<BinaryString name="{name}">{value}</BinaryString>')
+            elif tag == "OptionalCoordinateFrame":
+                lines.append(f'<OptionalCoordinateFrame name="{name}">{value}</OptionalCoordinateFrame>')
             elif tag == "SharedString":
                 used_sstr.add(value)
                 lines.append(f'<SharedString name="{name}">{value}</SharedString>')
@@ -299,7 +347,7 @@ def write(insts, root: int, sstr, out: pathlib.Path, skip: set):
         lines.append("</SharedStrings>")
     lines.append("</roblox>")
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return len(keep)
+    return len(keep), sorted(unsupported), sorted(lossy)
 
 
 def main():
@@ -310,10 +358,19 @@ def main():
         skip.add(args[i + 1])
         del args[i:i + 2]
     src, path, out = pathlib.Path(args[0]), args[1], pathlib.Path(args[2])
-    insts, roots, sstr = load(src)
+    insts, roots, sstr, problems = load(src)
     root = find(insts, roots, path)
-    count = write(insts, root, sstr, out, skip)
+    count, unsupported, lossy = write(insts, root, sstr, out, skip)
     print(f"{out.name}: {count} instances from {src.name}:{path}")
+    kept_classes = {insts[r]["class"] for r in insts}
+    for p in problems:
+        print("  could not read:", p)
+    for p in unsupported:
+        print("  NOT transferred (no XML form):", p)
+    for p in lossy:
+        print("  transferred but non-default:", p)
+    if not problems and not unsupported:
+        print("  exact copy (only Studio-regenerated ids left out)")
 
 
 if __name__ == "__main__":

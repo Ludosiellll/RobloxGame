@@ -80,6 +80,21 @@ function Pets.unequip(save: any, uid: any): boolean
 	return true
 end
 
+-- Удалить питомца (освободить место в рюкзаке); если он был с игроком — убрать.
+function Pets.delete(save: any, uid: any): boolean
+	if type(uid) ~= "number" then
+		return false
+	end
+	for i, p in save.pets do
+		if p.uid == uid then
+			table.remove(save.pets, i)
+			Pets.unequip(save, uid)
+			return true
+		end
+	end
+	return false
+end
+
 -- Сумма бонусов экипированных питомцев (доли: 0.2 = +20%).
 function Pets.bonuses(save: any): { speed: number, luck: number, income: number }
 	local out = { speed = 0, luck = 0, income = 0 }

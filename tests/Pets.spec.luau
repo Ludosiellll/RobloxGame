@@ -89,6 +89,18 @@ return function(t: any)
 		t.eq(Pets.equip(s, 4), true)
 	end)
 
+	t.test("delete frees the bag and unequips", function()
+		local s = save()
+		s.pets = { { uid = 1, id = "Red" }, { uid = 2, id = "Blue" } }
+		s.equipped = { 2 }
+		t.eq(Pets.delete(s, 2), true)
+		t.eq(#s.pets, 1)
+		t.eq(s.equipped, {})
+		t.eq(Pets.delete(s, 99), false)
+		t.eq(Pets.delete(s, "1"), false)
+		t.eq(#s.pets, 1)
+	end)
+
 	t.test("bonuses sum equipped only", function()
 		local s = save()
 		local speedPet, luckPet
