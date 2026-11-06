@@ -315,12 +315,35 @@ local function buildEdges(out: Instance)
 	end
 end
 
+-- Папка с биомами, куда бы её ни вставили: Workspace.Biomes, ServerStorage.BiomeSource или любая папка
+-- в плейсе, внутри которой есть биомы Forest и Savana (например, если при Insert from File был выделен
+-- другой объект).
+local function findBiomes(): Instance?
+	local direct = workspace:FindFirstChild("Biomes") or ServerStorage:FindFirstChild("BiomeSource")
+	local function hasBiomes(x: Instance): boolean
+		return x:FindFirstChild("Forest") ~= nil and x:FindFirstChild("Savana") ~= nil
+	end
+	if direct and hasBiomes(direct) then
+		return direct
+	end
+	for _, root in { workspace, ServerStorage, game:GetService("ReplicatedStorage") } do
+		for _, d in root:GetDescendants() do
+			if (d:IsA("Folder") or d:IsA("Model")) and hasBiomes(d) then
+				return d
+			end
+		end
+	end
+	return direct
+end
+
 function CraterBuilder.build(): { [string]: any }
 	local started = os.clock()
 	ops = 0
-	local source = workspace:FindFirstChild("Biomes") or ServerStorage:FindFirstChild("BiomeSource")
-	if not source then
-		warn("[Crater] Workspace.Biomes not found: copy it from the old project first. Building terrain without decor.")
+	local source = findBiomes()
+	if source then
+		print("[Crater] biomes: " .. source:GetFullName())
+	else
+		warn("[Crater] biomes not found: Insert from File → assets/biomes/Biomes.rbxmx (docs/ASSET_SETUP.md). Building terrain without decor.")
 	end
 	local old = workspace:FindFirstChild("Crater")
 	if old then
@@ -358,10 +381,10 @@ function CraterBuilder.build(): { [string]: any }
 	buildBaseSlots(folder("BaseSlots", root))
 	buildEdges(folder("Edges", root))
 	StarterPlayer.CharacterMaxSlopeAngle = C.MaxSlopeAngle
-	if source and source.Parent == workspace then
-		-- свежие биомы из Workspace заменяют старую копию в ServerStorage
+	if source and not (source.Parent == ServerStorage and source.Name == "BiomeSource") then
+		-- биомы из любого места переезжают в ServerStorage.BiomeSource (замена старой копии)
 		local old = ServerStorage:FindFirstChild("BiomeSource")
-		if old then
+		if old and old ~= source then
 			old:Destroy()
 		end
 		source.Name = "BiomeSource"
