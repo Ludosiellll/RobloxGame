@@ -19,6 +19,10 @@
 2. Пройди [docs/CHECKLIST_STAGE1.md](docs/CHECKLIST_STAGE1.md). Отладочные команды доступны в Studio по кнопке DEBUG.
 3. Анимации игрока (нести, толкнуть, празднование) публикуются один раз по [docs/ANIMATIONS.md](docs/ANIMATIONS.md).
 
+## Этап 2: как проверить
+
+Окна Folk Stud (Shop, Index, Rebirth, Settings), продажа, перерождение, лидерборды и профиль игрока — проверки в [docs/CHECKLIST_STAGE2.md](docs/CHECKLIST_STAGE2.md).
+
 ## Что Rojo трогает, а что нет
 
 Rojo управляет только этими папками (полный список в `default.project.json`):
