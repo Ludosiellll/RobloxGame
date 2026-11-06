@@ -102,7 +102,7 @@ return {
 		},
 		Moat = { inner = 400, outer = 480 }, -- лавовый обрыв между кольцом 3 и ядром (круче MaxSlopeAngle)
 		Core = { zone = 17, radius = 400, y = -330 },
-		Paths = { { zone = 15, deg = 45 }, { zone = 16, deg = 225 } }, -- дамбы через ров к ядру
+		Paths = { { zone = 15, deg = 67.5 }, { zone = 16, deg = 247.5 } }, -- дамбы через ров к ядру
 		PathWidth = 80,
 		PathOverhang = 20, -- дамба заходит на кольцо 3 и в ядро на столько studs
 		Ramps = { perTransition = 8, startDeg = 22.5, width = 70, overhang = 24 },

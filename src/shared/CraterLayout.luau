@@ -234,6 +234,119 @@ function CraterLayout.geysers(): { { x: number, z: number, y: number, toY: numbe
 	return out
 end
 
+local function arcsOverlap(a0: number, a1: number, b0: number, b1: number): boolean
+	for k = -1, 1 do
+		local off = k * TAU
+		if math.max(a0, b0 + off) < math.min(a1, b1 + off) - 1e-6 then
+			return true
+		end
+	end
+	return false
+end
+
+-- Ворота кольца 3, с которых начинается дамба path (зона под началом дамбы).
+local function pathRingZone(path: { zone: number, deg: number }): number?
+	local a = math.rad(path.deg)
+	local r = C.Rings[#C.Rings].inner + 1
+	return CraterLayout.zoneAt(math.cos(a) * r, math.sin(a) * r)
+end
+
+-- Зоны, граничащие с этой: соседние секторы кольца, перекрывающиеся секторы соседних колец,
+-- дамбы с кольцом 3 и ядром.
+function CraterLayout.neighbors(zone: number): { number }
+	local s = CraterLayout.sector(zone)
+	if not s then
+		return {}
+	end
+	local out: { number } = {}
+	local seen: { [number]: boolean } = { [zone] = true }
+	local function add(z: number?)
+		if z and not seen[z] then
+			seen[z] = true
+			table.insert(out, z)
+		end
+	end
+	if s.kind == "core" then
+		for _, path in C.Paths do
+			add(path.zone)
+		end
+	elseif s.kind == "path" then
+		add(C.Core.zone)
+		for _, path in C.Paths do
+			if path.zone == zone then
+				add(pathRingZone(path))
+			end
+		end
+	else
+		local ringIndex = s.ring :: number
+		local ring = C.Rings[ringIndex]
+		local slot = table.find(ring.zones, zone) :: number
+		local n = #ring.zones
+		if n > 1 then
+			add(ring.zones[(slot - 2) % n + 1])
+			add(ring.zones[slot % n + 1])
+		end
+		for _, other in { ringIndex - 1, ringIndex + 1 } do
+			local r2 = C.Rings[other]
+			if r2 then
+				for j, z in r2.zones do
+					local o = ringSector(other, j)
+					if arcsOverlap(s.a0, s.a1, o.a0, o.a1) then
+						add(z)
+					end
+				end
+			end
+		end
+		if ringIndex == #C.Rings then
+			for _, path in C.Paths do
+				if pathRingZone(path) == zone then
+					add(path.zone)
+				end
+			end
+		end
+	end
+	table.sort(out)
+	return out
+end
+
+-- Зоны, где есть игроки, и их соседи — там падают метеориты.
+function CraterLayout.activeZones(playerZones: { number }): { number }
+	local set: { [number]: boolean } = {}
+	for _, z in playerZones do
+		set[z] = true
+		for _, n in CraterLayout.neighbors(z) do
+			set[n] = true
+		end
+	end
+	local out: { number } = {}
+	for z in set do
+		table.insert(out, z)
+	end
+	table.sort(out)
+	return out
+end
+
+-- Зона в точке, а если точка на краю, склоне или обрыве — ближайшая по радиусу.
+function CraterLayout.nearestZone(x: number, z: number): number
+	local direct = CraterLayout.zoneAt(x, z)
+	if direct then
+		return direct
+	end
+	local r, a = CraterLayout.polar(x, z)
+	local best, bestR = math.huge, nil :: number?
+	for _, ring in C.Rings do
+		local d = if r < ring.inner then ring.inner - r elseif r > ring.outer then r - ring.outer else 0
+		if d < best then
+			best, bestR = d, math.clamp(r, ring.inner + 1, ring.outer - 1)
+		end
+	end
+	if r - C.Core.radius < best then
+		return C.Core.zone
+	end
+	local rr = bestR :: number
+	return CraterLayout.zoneAt(math.cos(a) * rr, math.sin(a) * rr) :: number
+end
+
 -- Можно ли игроку с этим числом перерождений быть в зоне (nil — край, склоны, обрывы — можно).
 function CraterLayout.canEnter(rebirths: number, zone: number?): boolean
 	if zone == nil then

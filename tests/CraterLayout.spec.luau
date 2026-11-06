@@ -54,10 +54,10 @@ return function(t: any)
 	end)
 
 	t.test("paths cross the moat", function()
-		t.eq(Layout.zoneAt(at(420, 45)), 15)
-		t.eq(Layout.zoneAt(at(420, 225)), 16)
+		t.eq(Layout.zoneAt(at(420, 67.5)), 15)
+		t.eq(Layout.zoneAt(at(420, 247.5)), 16)
 		t.eq(Layout.zoneAt(at(420, 135)), nil)
-		t.eq(Layout.zoneAt(at(420, 52)), nil)
+		t.eq(Layout.zoneAt(at(420, 76)), nil)
 	end)
 
 	t.test("every zone 1..17 has a sector", function()
@@ -128,6 +128,25 @@ return function(t: any)
 		for _, p in paths do
 			t.truthy(slope(p.fromR, p.fromY, p.toR, p.toY) < maxSlope, "path must be walkable")
 			t.truthy(p.fromR > C.Moat.outer and p.toR < C.Moat.inner, "path must span the moat")
+		end
+	end)
+
+	t.test("causeways start mid-sector and stay clear of geysers", function()
+		local C = (require(Shared.Config) :: any).Crater
+		local ring3 = C.Rings[#C.Rings]
+		local step = 360 / #ring3.zones
+		for _, p in C.Paths do
+			local rel = (p.deg - ring3.startDeg) % step
+			t.truthy(rel > 10 and rel < step - 10, "causeway on a sector boundary: " .. p.deg)
+		end
+		for _, g in Layout.geysers() do
+			for _, p in Layout.paths() do
+				local dx, dz = math.cos(p.angle), math.sin(p.angle)
+				local along = g.x * dx + g.z * dz
+				local across = math.abs(-g.x * dz + g.z * dx)
+				local onSpan = along >= p.toR - 30 and along <= p.fromR + 30
+				t.truthy(not (onSpan and across < C.PathWidth / 2 + 15), "geyser on causeway at " .. math.deg(p.angle))
+			end
 		end
 	end)
 

@@ -28,5 +28,6 @@ start("MapService")
 start("AnimLibrary")
 start("CreatureFactory")
 start("BaseService")
+start("MeteorService")
 
 print(`[Server] Meteor Rain {Config.Version} started`)
