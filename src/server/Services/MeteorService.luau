@@ -134,7 +134,7 @@ local function buildModel(m: MeteorState): Model
 	glow.Shape = Enum.PartType.Ball
 	glow.Material = Enum.Material.Neon
 	glow.Color = color
-	glow.Transparency = 0.55
+	glow.Transparency = 0.8
 	glow.Size = Vector3.one * size * 1.08
 	glow.CFrame = rock.CFrame
 	glow.Anchored = true
@@ -143,6 +143,16 @@ local function buildModel(m: MeteorState): Model
 	glow.CanTouch = false
 	glow.CastShadow = false
 	glow.Parent = model
+	-- мерцание вокруг камня из пака VFX (MeteorTrail.Middle.Glow), цвета редкости
+	local vfx = ReplicatedStorage:FindFirstChild("VFX")
+	local trail = vfx and vfx:FindFirstChild("MeteorTrail")
+	local shimmer = trail and trail:FindFirstChild("Glow", true)
+	if shimmer and shimmer:IsA("ParticleEmitter") then
+		local e = shimmer:Clone()
+		e.Color = ColorSequence.new(color)
+		e.Enabled = true
+		e.Parent = rock
+	end
 	local light = Instance.new("PointLight")
 	light.Color = color
 	light.Range = 10 + 4 * scale

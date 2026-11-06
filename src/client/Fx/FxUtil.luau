@@ -182,6 +182,60 @@ function FxUtil.closeness(position: Vector3, range: number): number
 	return math.clamp(1 - (cam.CFrame.Position - position).Magnitude / range, 0, 1)
 end
 
+-- Эффект из ReplicatedStorage.VFX (Rojo кладёт туда assets/vfx): копия без столкновений.
+function FxUtil.vfx(name: string): Instance?
+	local folder = ReplicatedStorage:FindFirstChild("VFX")
+	local src = folder and folder:FindFirstChild(name)
+	if not src then
+		return nil
+	end
+	local copy = src:Clone()
+	for _, d in copy:GetDescendants() do
+		if d:IsA("LuaSourceContainer") then
+			d:Destroy()
+		elseif d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+			d.CanQuery = false
+			d.CanTouch = false
+		end
+	end
+	if copy:IsA("BasePart") then
+		copy.Anchored = true
+		copy.CanCollide = false
+		copy.CanQuery = false
+		copy.CanTouch = false
+	end
+	return copy
+end
+
+-- Разовая вспышка эффекта из VFX в точке, перекрашенная в цвет. true — если эффект нашёлся.
+function FxUtil.burstVfx(name: string, position: Vector3, color: Color3?, child: string?): boolean
+	local fx = FxUtil.vfx(name)
+	if not fx then
+		return false
+	end
+	local root: Instance = if child then (fx:FindFirstChild(child, true) or fx) else fx
+	if color then
+		FxUtil.recolor(root, color)
+	end
+	FxUtil.setEmitters(root, false)
+	if root:IsA("BasePart") then
+		root.Transparency = 1
+		root.CFrame = CFrame.new(position)
+		root.Parent = FxUtil.folder()
+	elseif root:IsA("Model") then
+		root:PivotTo(CFrame.new(position))
+		root.Parent = FxUtil.folder()
+	else
+		local holder = FxUtil.part({ Transparency = 1, Size = Vector3.one, CFrame = CFrame.new(position) })
+		root.Parent = holder
+		root = holder
+	end
+	Debris:AddItem(root, FxUtil.burst(root) + 0.5)
+	return true
+end
+
 function FxUtil.rarityColor(rarity: string): Color3
 	local info = Rarity.Info[rarity] or Rarity.Info.Common
 	return Color3.fromRGB(info.color[1], info.color[2], info.color[3])

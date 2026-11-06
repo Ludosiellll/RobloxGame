@@ -85,6 +85,12 @@ local function makeOrb(color: Color3, scale: number): BasePart
 				end)())
 			end
 		end
+	elseif FxUtil.vfx("MeteorTrail") then
+		-- метеор с хвостом из пака VFX (Rojo кладёт его сам)
+		orb = FxUtil.vfx("MeteorTrail") :: BasePart
+		FxUtil.recolor(orb, color)
+		FxUtil.setEmitters(orb, true)
+		orb.Size *= scale
 	else
 		orb = FxUtil.part({ Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = color, Size = Vector3.one * 3 * scale })
 		local a0 = Instance.new("Attachment")
@@ -148,6 +154,8 @@ local function impact(info: Info, color: Color3, scale: number)
 		FxUtil.recolor(fx, color)
 		fx.Parent = FxUtil.folder()
 		Debris:AddItem(fx, FxUtil.burst(fx) + 0.5)
+	else
+		FxUtil.burstVfx("ExplosionPack", position + Vector3.new(0, 1, 0), nil, "GreandeExplosion")
 	end
 	local ball = FxUtil.part({ Shape = Enum.PartType.Ball, Material = Enum.Material.Neon, Color = Color3.fromRGB(255, 220, 160), Transparency = 0.05, Size = Vector3.one * 3, CFrame = CFrame.new(position + Vector3.new(0, 1, 0)) })
 	FxUtil.tween(ball, 0.3, { Size = Vector3.one * 14 * scale, Transparency = 1, Color = color })

@@ -84,6 +84,7 @@ function Reveal.play(position: Vector3, creatureId: string, _mutation: string?, 
 		Debris:AddItem(ring, 0.55)
 	end
 	sparks(position, color)
+	FxUtil.burstVfx("StarExplosion", position + Vector3.new(0, 2, 0), color)
 	FxUtil.soundAt(Config.Fx.Sounds.Reveal, position)
 	if FxUtil.closeness(position, 40) > 0.2 then
 		CameraFx.flash(0.2, 0.3, color)

@@ -101,6 +101,19 @@ local function applyMutation(model: Model, mutation: string)
 	if mutation == "Rainbow" then
 		model:SetAttribute("Rainbow", true)
 	end
+	-- золотое сияние из пака VFX (ReplicatedStorage.VFX.GoldenAtmosphere) вокруг Golden
+	local vfx = ReplicatedStorage:FindFirstChild("VFX")
+	local golden = vfx and vfx:FindFirstChild("GoldenAtmosphere")
+	if mutation == "Golden" and golden and model.PrimaryPart then
+		for _, e in golden:GetDescendants() do
+			if e:IsA("ParticleEmitter") then
+				local c = e:Clone()
+				c.Rate = math.min(c.Rate, 6)
+				c.Enabled = true
+				c.Parent = model.PrimaryPart
+			end
+		end
+	end
 end
 
 function CreatureFactory.build(creatureId: string, mutation: string?): Model
