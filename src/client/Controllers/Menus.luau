@@ -2,6 +2,7 @@
 -- Окна Folk Stud: рельса слева (Shop, Index, Rebirth, Settings) и окно продажи с площадки базы.
 -- Данные для окон считает UiData из атрибутов игрока; всё, что меняет деньги, решает сервер.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -185,7 +186,23 @@ local function settingsCfg(): any
 	}
 end
 
+-- Подсказки «Sell» видны только владельцу базы (сервер всё равно проверяет владельца).
+local function watchSellPrompt(prompt: Instance)
+	if not prompt:IsA("ProximityPrompt") then
+		return
+	end
+	local function sync()
+		prompt.Enabled = prompt:GetAttribute("OwnerUserId") == player.UserId
+	end
+	sync()
+	prompt:GetAttributeChangedSignal("OwnerUserId"):Connect(sync)
+end
+
 function Menus.start()
+	for _, p in CollectionService:GetTagged("SellPrompt") do
+		watchSellPrompt(p)
+	end
+	CollectionService:GetInstanceAddedSignal("SellPrompt"):Connect(watchSellPrompt)
 	local pg = player:WaitForChild("PlayerGui")
 	local shop = buildShop(pg)
 	local rebirth = M.rebirth(pg, rebirthCfg())

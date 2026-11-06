@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local FxUtil = require(script.Parent:WaitForChild("FxUtil") :: ModuleScript) :: any
+local ClientSettings = require(script.Parent:WaitForChild("ClientSettings") :: ModuleScript) :: any
 
 local CameraFx = {}
 
@@ -54,6 +55,9 @@ local function ensure()
 end
 
 function CameraFx.shake(strength: number, duration: number)
+	if ClientSettings.values.shake == false then
+		return
+	end
 	ensure()
 	local now = os.clock()
 	local remaining = math.max(shake.endT - now, 0)
@@ -87,6 +91,9 @@ function CameraFx.skyFlash(strength: number, time: number)
 end
 
 function CameraFx.fovPunch(amount: number)
+	if ClientSettings.values.shake == false then
+		return
+	end
 	local cam = workspace.CurrentCamera
 	if not cam then
 		return

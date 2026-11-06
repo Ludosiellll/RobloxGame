@@ -5,6 +5,7 @@
 local Debris = game:GetService("Debris")
 
 local FxUtil = require(script.Parent:WaitForChild("FxUtil") :: ModuleScript) :: any
+local ClientSettings = require(script.Parent:WaitForChild("ClientSettings") :: ModuleScript) :: any
 
 local Crater = {}
 
@@ -56,7 +57,7 @@ function Crater.at(position: Vector3, scale: number, glowColor: Color3?)
 	FxUtil.tween(ring, 0.55, { Size = Vector3.new(0.15, 42 * scale, 42 * scale), Transparency = 1 }, Enum.EasingStyle.Quart)
 	Debris:AddItem(ring, 0.6)
 
-	if normal.Y < 0.7 then
+	if normal.Y < 0.7 or ClientSettings.values.lowDetail then
 		return
 	end
 
@@ -91,8 +92,7 @@ function Crater.at(position: Vector3, scale: number, glowColor: Color3?)
 			Material = material,
 			CFrame = CFrame.new(center + out * FxUtil.rand({ 0.5, 3 }) + Vector3.new(0, 1, 0)) * CFrame.Angles(math.random() * 6, math.random() * 6, math.random() * 6),
 			Anchored = false,
-			CanCollide = true,
-			Massless = true,
+			CanCollide = false,
 		})
 		chunk.AssemblyLinearVelocity = out * FxUtil.rand(FLYING.speed) * 0.6 + Vector3.new(0, FxUtil.rand({ 30, 60 }), 0)
 		chunk.AssemblyAngularVelocity = Vector3.new(math.random(-20, 20), math.random(-20, 20), math.random(-20, 20))

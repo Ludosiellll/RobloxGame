@@ -12,6 +12,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript) :: any
 local AnimClip = require(Shared:WaitForChild("AnimClip") :: ModuleScript) :: any
+local ClientSettings = require(script.Parent.Parent:WaitForChild("Fx"):WaitForChild("ClientSettings") :: ModuleScript) :: any
 
 local AnimationPlayer = {}
 
@@ -174,7 +175,8 @@ local function step()
 		return a.d < b.d
 	end)
 	local now = os.clock()
-	for i = 1, math.min(#near, Config.Anim.MaxAnimated) do
+	local limit = if ClientSettings.values.lowDetail then Config.Anim.MaxAnimated // 2 else Config.Anim.MaxAnimated
+	for i = 1, math.min(#near, limit) do
 		local e = near[i].e
 		if stale(e) or (not next(e.bones) and now - e.since < 5) then
 			e.bones, e.parts = scan(e.model)

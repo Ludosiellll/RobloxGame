@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Rarity = require(Shared:WaitForChild("Rarity") :: ModuleScript) :: any
+local ClientSettings = require(script.Parent:WaitForChild("ClientSettings") :: ModuleScript) :: any
 
 local FxUtil = {}
 
@@ -111,6 +112,7 @@ function FxUtil.sound(def: { any }?, parent: Instance?, extra: { [string]: any }
 	s.SoundId = def[1]
 	s.Volume = def[2] or 1
 	s.PlaybackSpeed = def[3] or 1
+	s.SoundGroup = ClientSettings.sfxGroup()
 	for k, v in extra or {} do
 		(s :: any)[k] = v
 	end

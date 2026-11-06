@@ -202,6 +202,12 @@ function EconomyService.start()
 			limiter.forget(tostring(player.UserId) .. ":" .. kind)
 		end
 	end)
+	BaseService.onSellSlot(function(player, slot)
+		if allowed(player, "sell") then
+			EconomyService.sellSlot(player, slot)
+		end
+	end)
+	BaseService.onSellPad(EconomyService.openSell)
 	registerDebug()
 end
 

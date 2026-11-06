@@ -31,5 +31,7 @@ start("BaseService")
 start("MeteorService")
 start("CarryService")
 start("PushService")
+start("EconomyService")
+start("LeaderboardService")
 
 print(`[Server] Meteor Rain {Config.Version} started`)

@@ -3,12 +3,14 @@
 -- при загрузке данных. Существа стоят на площадках с подписями, доход идёт раз в секунду,
 -- при входе начисляется офлайн-доход. Персонаж появляется у переднего края своей базы.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript) :: any
 local Formulas = require(Shared:WaitForChild("Formulas") :: ModuleScript) :: any
+local Economy = require(Shared:WaitForChild("Economy") :: ModuleScript) :: any
 local Rarity = require(Shared:WaitForChild("Rarity") :: ModuleScript) :: any
 local Remotes = require(Shared:WaitForChild("Remotes") :: ModuleScript) :: any
 local Creatures = require(Shared:WaitForChild("Catalog"):WaitForChild("Creatures") :: ModuleScript) :: any
@@ -54,6 +56,8 @@ local byPlayer: { [Player]: Base } = {}
 local incomeMultiplier: (Player) -> number = function()
 	return 1
 end
+local sellSlotHandler: ((Player, number) -> ())? = nil
+local sellPadHandler: ((Player) -> ())? = nil
 
 local function part(props: { [string]: any }, parent: Instance): Part
 	local p = Instance.new("Part")
@@ -130,6 +134,22 @@ local function buildBase(index: number, frame: CFrame, parent: Instance): Base
 	local stroke = Instance.new("UIStroke")
 	stroke.Thickness = 3
 	stroke.Parent = sign
+	local sellPad = part({ Name = "SellPad", Size = Vector3.new(7, 0.5, 7), CFrame = frame * CFrame.new(w / 2 - 5, 0.75, -d / 2 + 5), Material = Enum.Material.Neon, Color = Color3.fromRGB(43, 224, 0) }, model)
+	local sellPrompt = Instance.new("ProximityPrompt")
+	sellPrompt.Name = "SellPrompt"
+	sellPrompt.ActionText = "Sell creatures"
+	sellPrompt.ObjectText = "Sell"
+	sellPrompt.HoldDuration = 0
+	sellPrompt.MaxActivationDistance = 10
+	sellPrompt.RequiresLineOfSight = false
+	sellPrompt.Parent = sellPad
+	CollectionService:AddTag(sellPrompt, "SellPrompt")
+	sellPrompt.Triggered:Connect(function(player)
+		local b = bases[index]
+		if b and b.owner == player and sellPadHandler then
+			sellPadHandler(player)
+		end
+	end)
 	model.PrimaryPart = floor
 	model.Parent = parent
 	return { index = index, frame = frame, model = model, floor = floor, trim = trim, pads = pads, creatures = creatures, sign = sign, owner = nil }
@@ -198,6 +218,23 @@ local function showCreature(base: Base, slot: number, owned: { id: string, mutat
 	CreatureFactory.placeOn(model, padFrame(base, slot))
 	tagFor(model, owned.id, owned.mutation)
 	model:SetAttribute("Slot", slot)
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "SellPrompt"
+	prompt.ActionText = "Sell"
+	prompt.ObjectText = "$" .. Formulas.formatMoney(Formulas.sellValue(owned.id, owned.mutation))
+	prompt.HoldDuration = 0.6
+	prompt.MaxActivationDistance = 8
+	prompt.RequiresLineOfSight = false
+	if base.owner then
+		prompt:SetAttribute("OwnerUserId", base.owner.UserId)
+	end
+	prompt.Parent = model.PrimaryPart
+	CollectionService:AddTag(prompt, "SellPrompt")
+	prompt.Triggered:Connect(function(player)
+		if base.owner == player and sellSlotHandler and model.Parent == base.creatures then
+			sellSlotHandler(player, slot)
+		end
+	end)
 	model.Parent = base.creatures
 end
 
@@ -218,6 +255,19 @@ local function syncStats(player: Player, save: any)
 	player:SetAttribute("Money", save.money)
 	player:SetAttribute("Income", income)
 	player:SetAttribute("Rebirths", save.rebirths)
+	player:SetAttribute("Strength", save.strength)
+	player:SetAttribute("Slots", save.slots)
+	player:SetAttribute("Caught", save.stats.caught)
+	player:SetAttribute("BestCatch", save.stats.bestCatch)
+	player:SetAttribute("Earned", save.stats.earned)
+	local best, bestIncome = nil, -1
+	for _, c in save.creatures do
+		local inc = Formulas.creatureIncome(c.id, c.mutation)
+		if inc > bestIncome then
+			best, bestIncome = c.id, inc
+		end
+	end
+	player:SetAttribute("BestCreature", best)
 	local stats = player:FindFirstChild("leaderstats")
 	if stats then
 		local cash = stats:FindFirstChild("Cash") :: IntValue?
@@ -264,6 +314,10 @@ local function assign(player: Player, save: any)
 	base.owner = player
 	byPlayer[player] = base
 	player:SetAttribute("BaseIndex", base.index)
+	local padPrompt = base.model:FindFirstChild("SellPrompt", true)
+	if padPrompt then
+		padPrompt:SetAttribute("OwnerUserId", player.UserId)
+	end
 	paint(base, OWNER_COLORS[base.index])
 	base.sign.Text = player.DisplayName .. "'s Base"
 	showAll(base, save)
@@ -272,7 +326,7 @@ local function assign(player: Player, save: any)
 	local income = Formulas.incomePerSecond(save.creatures, save.rebirths, incomeMultiplier(player))
 	local earned = Formulas.offlineEarnings(income, away)
 	if earned > 0 then
-		save.money += earned
+		Economy.earn(save, earned)
 		Remotes.get("Notify"):FireClient(player, "While you were away: +$" .. Formulas.formatMoney(earned))
 	end
 	syncStats(player, save)
@@ -292,6 +346,10 @@ local function release(player: Player)
 	end
 	base.owner = nil
 	base.creatures:ClearAllChildren()
+	local padPrompt = base.model:FindFirstChild("SellPrompt", true)
+	if padPrompt then
+		padPrompt:SetAttribute("OwnerUserId", nil)
+	end
 	paint(base, FREE_COLOR)
 	refreshPads(base, 0)
 	base.sign.Text = "Free base"
@@ -319,6 +377,15 @@ function BaseService.isInOwnBase(player: Player, position: Vector3): boolean
 	end
 	local p = b.frame:PointToObjectSpace(position)
 	return Formulas.insideBase(p.X, p.Y, p.Z)
+end
+
+-- Продажа с подсказки на существе и площадка продажи: решает EconomyService.
+function BaseService.onSellSlot(fn: (Player, number) -> ())
+	sellSlotHandler = fn
+end
+
+function BaseService.onSellPad(fn: (Player) -> ())
+	sellPadHandler = fn
 end
 
 -- Множитель дохода игрока (геймпассы, бусты). По умолчанию 1.
@@ -356,7 +423,11 @@ function BaseService.addCreature(player: Player, creatureId: string, mutation: s
 	else
 		save.money += Formulas.sellValue(new.id, new.mutation)
 	end
+	local isNew = not save.collection[creatureId]
 	save.collection[creatureId] = true
+	if isNew then
+		Remotes.get("Collection"):FireClient(player, { creatureId })
+	end
 	save.stats.caught += 1
 	save.stats.bestCatch = math.max(save.stats.bestCatch, Formulas.creatureIncome(new.id, new.mutation))
 	local where = base.frame.Position
@@ -427,7 +498,7 @@ function BaseService.start()
 				local save = PlayerData.get(player)
 				if save and player.Parent then
 					local income = Formulas.incomePerSecond(save.creatures, save.rebirths, incomeMultiplier(player))
-					save.money += income
+					Economy.earn(save, income)
 					syncStats(player, save)
 				end
 			end
