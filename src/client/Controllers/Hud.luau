@@ -63,11 +63,13 @@ function Hud.start()
 	-- деньги и доход
 	local wallet = Instance.new("Frame")
 	wallet.BackgroundTransparency = 1
-	wallet.Position = UDim2.fromOffset(14, 10)
+	-- справа сверху: слева рельса окон Folk Stud закрывает угол
+	wallet.AnchorPoint = Vector2.new(1, 0)
+	wallet.Position = UDim2.new(1, -14, 0, 10)
 	wallet.Size = UDim2.fromOffset(260, 86)
 	wallet.Parent = gui
-	local money = label(wallet, { Size = UDim2.new(1, 0, 0, 52), Text = "$0", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(120, 255, 120) })
-	local income = label(wallet, { Position = UDim2.fromOffset(2, 52), Size = UDim2.new(1, 0, 0, 30), Text = "+$0/s", TextXAlignment = Enum.TextXAlignment.Left })
+	local money = label(wallet, { Size = UDim2.new(1, 0, 0, 52), Text = "$0", TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Color3.fromRGB(120, 255, 120) })
+	local income = label(wallet, { Position = UDim2.fromOffset(0, 52), Size = UDim2.new(1, -2, 0, 30), Text = "+$0/s", TextXAlignment = Enum.TextXAlignment.Right })
 
 	local function refreshMoney()
 		local m = (player:GetAttribute("Money") :: number?) or 0
@@ -102,7 +104,7 @@ function Hud.start()
 	local stack = Instance.new("Frame")
 	stack.BackgroundTransparency = 1
 	stack.AnchorPoint = Vector2.new(1, 0)
-	stack.Position = UDim2.new(1, -14, 0, 70)
+	stack.Position = UDim2.new(1, -14, 0, 110)
 	stack.Size = UDim2.fromOffset(340, 300)
 	stack.Parent = gui
 	local list = Instance.new("UIListLayout")
