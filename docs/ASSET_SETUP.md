@@ -24,12 +24,25 @@
 
 Пересобрать кратер (например, после правок в `Config.Crater`) — снова та же команда. Если Studio ответит старой версией после обновления кода, перезапусти Studio или переподключи Rojo: Command Bar запоминает модули.
 
-## 3. Настройки игры
+## 3. Эффекты из плейсов
+
+Эти эффекты лежат в файлах-плейсах, Rojo их не переносит:
+
+1. Открой `assets/imported/Fireball.rbxl` во втором окне Studio → выдели `ReplicatedStorage → FireballVFX` → Ctrl+C.
+2. В плейсе игры создай в `ReplicatedStorage` папку `Packs` (если её нет) и вставь туда (Ctrl+V).
+3. То же для `assets/imported/Thunderstorm.rbxl` → `ReplicatedStorage → WeatherVFX` → в `ReplicatedStorage.Packs`.
+4. (Необязательно) File → Import 3D → `assets/meshes/meteor_1.obj` → переименуй в `MeteorRock` → в `ReplicatedStorage.Packs`. Без него камень метеорита рисуется кодом.
+
+Остальные эффекты (`MeteorTrail`, `StarExplosion`, `ExplosionPack`, `SmoothDebris`, `GoldenAtmosphere`) Rojo кладёт сам в `ReplicatedStorage.VFX`.
+
+## 4. Настройки игры
 
 - `Workspace` → свойство `StreamingEnabled` = true.
 - **Game Settings → Places**: Max Players = 8.
 - После публикации: **Game Settings → Security → Enable Studio Access to API Services** — нужно для сохранений.
 
-## 4. Проверка
+## 5. Проверка
+
+Нажми Play: в Output блок `[Assets]` — у каждого пункта `OK` или что и куда положить.
 
 Пришли скриншоты: кратер сверху (камера над центром) и с края, где стоят базы. Пробеги по одному из спусков вниз на кольцо 2.

@@ -21,6 +21,7 @@ local function start(name: string)
 end
 
 Remotes.init()
+start("AssetCheck")
 start("PlayerData")
 
 print(`[Server] Meteor Rain {Config.Version} started`)
