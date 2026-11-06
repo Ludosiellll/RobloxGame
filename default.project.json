@@ -25,6 +25,15 @@
           "$path": "src/client"
         }
       }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "Packs": {
+        "$path": "assets/packs"
+      },
+      "StudioTools": {
+        "$path": "src/studio"
+      }
     }
   }
 }

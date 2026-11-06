@@ -87,4 +87,65 @@ return {
 	Announce = {
 		RarityMin = "Mythic",
 	},
+
+	-- Карта — гигантский кратер с центром в начале координат (studs).
+	Crater = {
+		PlainRadius = 2500, -- равнина вокруг кратера
+		RimRadius = 1950, -- край кратера
+		RimY = 0,
+		BaseRadius = 2120, -- базы по кругу на краю
+		BaseCount = 8,
+		Rings = {
+			{ zones = { 1, 2, 3, 4 }, inner = 1380, outer = 1800, y = -60, startDeg = 45 },
+			{ zones = { 5, 6, 7, 8, 9, 10 }, inner = 880, outer = 1300, y = -150, startDeg = 30 },
+			{ zones = { 11, 12, 13, 14 }, inner = 480, outer = 800, y = -240, startDeg = 45 },
+		},
+		Moat = { inner = 360, outer = 480 }, -- лавовый склон между кольцом 3 и ядром
+		Core = { zone = 17, radius = 360, y = -330 },
+		Paths = { { zone = 15, deg = 45 }, { zone = 16, deg = 225 } }, -- дамбы через ров к ядру
+		PathWidth = 80,
+		Ramps = { perTransition = 8, startDeg = 22.5, width = 70, overhang = 24 },
+		Geysers = { perTransition = 8, startDeg = 0, inset = 30, overshoot = 25 },
+		MaxSlopeAngle = 40, -- круче персонаж не заходит: обрывы между кольцами только через спуски и гейзеры
+		ChunkLength = 125, -- длина куска биома, который раскладывается по дуге
+		SkipNames = { "Wall", "EndWall", "1", "2", "3", "Ground", "GrassTop" },
+		SpawnMargin = 20,
+		-- Материал Terrain для пола каждого сектора (имена Enum.Material).
+		ZoneMaterials = {
+			Forest = "LeafyGrass",
+			Savana = "Ground",
+			Desert = "Sand",
+			Jungle = "Mud",
+			Ocean = "Sandstone",
+			Mountains = "Rock",
+			Taiga = "Pebble",
+			Winter = "Snow",
+			PrehistoricForest = "Grass",
+			DeepWaters = "Glacier",
+			Hell = "Basalt",
+			AncientRuins = "Limestone",
+			MythicalParadise = "Salt",
+			ShadowRealm = "Slate",
+			HarvestFields = "WoodPlanks",
+			PhantomHarbor = "Cobblestone",
+			NuclearWasteland = "Basalt",
+		},
+		Materials = {
+			Plain = "Grass",
+			Slope = "Ground",
+			Cliff = "Rock",
+			Moat = "CrackedLava",
+			Ramp = "Pavement",
+		},
+		-- Цвета материалов Terrain (общие на всю карту), RGB 0–255.
+		MaterialColors = {
+			Grass = { 106, 176, 76 },
+			LeafyGrass = { 72, 140, 60 },
+			Salt = { 236, 178, 222 },
+			Slate = { 70, 56, 92 },
+			Glacier = { 120, 170, 220 },
+		},
+		SlabThickness = 24, -- толщина слоя Terrain под поверхностью
+		SlabStep = 40, -- шаг плит по дуге, studs
+	},
 }
