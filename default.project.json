@@ -9,6 +9,9 @@
       },
       "VFX": {
         "$path": "assets/vfx"
+      },
+      "Models": {
+        "$path": "assets/models"
       }
     },
     "ServerScriptService": {

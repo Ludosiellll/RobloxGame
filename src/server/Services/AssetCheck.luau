@@ -34,8 +34,8 @@ local CHECKS: { Check } = {
 	{ name = "Crater.BaseSlots", find = function() return path(workspace, "Crater", "BaseSlots") end, hint = "rebuild the crater, it creates the 8 base slots" },
 	{ name = "Brainrots pack", find = brainrotFolder, hint = "ServerStorage → Insert from File → assets/packs/Brainrots.rbxm (docs/ASSET_SETUP.md)" },
 	{ name = "VFX (Rojo)", find = function() return ReplicatedStorage:FindFirstChild("VFX") end, hint = "synced by Rojo from assets/vfx — connect Rojo" },
-	{ name = "FireballVFX", find = function() return path(ReplicatedStorage, "Packs", "FireballVFX") end, hint = "copy ReplicatedStorage.FireballVFX from Fireball.rbxl into ReplicatedStorage.Packs" },
-	{ name = "WeatherVFX", find = function() return path(ReplicatedStorage, "Packs", "WeatherVFX") end, hint = "copy ReplicatedStorage.WeatherVFX from Thunderstorm.rbxl into ReplicatedStorage.Packs" },
+	{ name = "FireballVFX", find = function() return AssetCheck.fireball() end, hint = "synced by Rojo from assets/vfx/FireballVFX.rbxmx — connect Rojo" },
+	{ name = "WeatherVFX", find = function() return AssetCheck.weather() end, hint = "synced by Rojo from assets/vfx/WeatherVFX.rbxmx — connect Rojo" },
 	{ name = "MeteorRock", find = function() return path(ReplicatedStorage, "Packs", "MeteorRock") end, hint = "optional: Import 3D assets/meshes/meteor_1.obj, rename to MeteorRock, put into ReplicatedStorage.Packs", optional = true },
 }
 
@@ -70,11 +70,11 @@ function AssetCheck.crater(): Instance?
 end
 
 function AssetCheck.fireball(): Instance?
-	return path(ReplicatedStorage, "Packs", "FireballVFX")
+	return path(ReplicatedStorage, "VFX", "FireballVFX") or path(ReplicatedStorage, "Packs", "FireballVFX")
 end
 
 function AssetCheck.weather(): Instance?
-	return path(ReplicatedStorage, "Packs", "WeatherVFX")
+	return path(ReplicatedStorage, "VFX", "WeatherVFX") or path(ReplicatedStorage, "Packs", "WeatherVFX")
 end
 
 function AssetCheck.vfx(name: string): Instance?

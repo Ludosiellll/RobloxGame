@@ -22,8 +22,10 @@ local MeteorFall = {}
 export type Info = { id: string, position: Vector3, rarity: string, mutation: string?, impactAt: number }
 
 local function packPart(name: string): BasePart?
+	-- FireballVFX: из assets/vfx через Rojo (ReplicatedStorage.VFX) или скопированный вручную в Packs
+	local vfx = ReplicatedStorage:FindFirstChild("VFX")
 	local packs = ReplicatedStorage:FindFirstChild("Packs")
-	local fire = packs and packs:FindFirstChild("FireballVFX")
+	local fire = (vfx and vfx:FindFirstChild("FireballVFX")) or (packs and packs:FindFirstChild("FireballVFX"))
 	local p = fire and fire:FindFirstChild(name)
 	return if p and p:IsA("BasePart") then p else nil
 end

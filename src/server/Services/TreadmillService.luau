@@ -26,8 +26,10 @@ local runLimit = RateLimit.new(4, 4)
 local warned = false
 
 local function template(tier: number): Model?
+	-- из assets/models через Rojo (ReplicatedStorage.Models) или скопированные вручную в Packs
+	local models = ReplicatedStorage:FindFirstChild("Models")
 	local packs = ReplicatedStorage:FindFirstChild("Packs")
-	local row = packs and packs:FindFirstChild("TreadmillProgression")
+	local row = (models and models:FindFirstChild("TreadmillProgression")) or (packs and packs:FindFirstChild("TreadmillProgression"))
 	local m = row and row:FindFirstChild(string.format("Treadmill%02d", tier))
 	if not m and not warned then
 		warned = true

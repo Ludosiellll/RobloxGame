@@ -35,8 +35,9 @@ local function drawPath(points: { Vector3 }, core: number, glow: number, color: 
 end
 
 local function thunderstrike(position: Vector3)
+	local vfx = ReplicatedStorage:FindFirstChild("VFX")
 	local packs = ReplicatedStorage:FindFirstChild("Packs")
-	local weather = packs and packs:FindFirstChild("WeatherVFX")
+	local weather = (vfx and vfx:FindFirstChild("WeatherVFX")) or (packs and packs:FindFirstChild("WeatherVFX"))
 	local template = weather and weather:FindFirstChild("thunderstrike")
 	if not template or not template:IsA("BasePart") then
 		return
