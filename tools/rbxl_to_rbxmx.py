@@ -9,6 +9,7 @@ HistoryId) are left out, plus properties that are empty/default in the source (t
 reports anything non-default it could not transfer, so a clean run means an exact copy). Needs lz4 and zstandard.
 """
 import base64
+import hashlib
 import pathlib
 import struct
 import sys
@@ -230,11 +231,11 @@ def load(path: pathlib.Path):
             cnt, = struct.unpack("<I", chunk[p:p + 4])
             p += 4
             for _ in range(cnt):
-                md5 = chunk[p:p + 16]
-                p += 16
+                p += 16  # хеш из файла не используем: новые версии Studio пишут туда нули
                 ln, = struct.unpack("<I", chunk[p:p + 4])
                 p += 4
-                out.append((base64.b64encode(md5).decode(), chunk[p:p + ln]))
+                data_ = chunk[p:p + ln]
+                out.append((base64.b64encode(hashlib.md5(data_).digest()).decode(), data_))
                 p += ln
             sstr = out
         elif name == b"PROP":
