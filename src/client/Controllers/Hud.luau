@@ -18,11 +18,13 @@ local Zones = require(Shared:WaitForChild("Zones") :: ModuleScript) :: any
 local Hud = {}
 
 local player = Players.LocalPlayer
-local FONT = Enum.Font.FredokaOne
+local FONT = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy) -- как в ките Folk Stud
 
 local function stroke(parent: Instance, thickness: number?)
 	local s = Instance.new("UIStroke")
-	s.Thickness = thickness or 3
+	s.Name = "UIStroke"
+	s.Thickness = thickness or 3.7
+	s.LineJoinMode = Enum.LineJoinMode.Bevel
 	s.Color = Color3.fromRGB(20, 20, 28)
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 	s.Parent = parent
@@ -31,7 +33,7 @@ end
 local function label(parent: Instance, props: { [string]: any }): TextLabel
 	local l = Instance.new("TextLabel")
 	l.BackgroundTransparency = 1
-	l.Font = FONT
+	l.FontFace = FONT
 	l.TextScaled = true
 	l.TextColor3 = Color3.new(1, 1, 1)
 	for k, v in props do
@@ -156,29 +158,42 @@ function Hud.start()
 
 	-- большой баннер объявлений
 	local banner = label(gui, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 60), Size = UDim2.new(0.8, 0, 0, 64), Text = "", TextTransparency = 1, Visible = false })
-	local bannerToken = 0
-	Remotes.get("Announce").OnClientEvent:Connect(function(payload: any)
-		local text = if type(payload) == "table" then payload.text elseif type(payload) == "string" then payload else nil
-		if type(text) ~= "string" then
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 230, 0))
+	gradient.Rotation = 90
+	gradient.Parent = banner
+	-- объявления идут по очереди, каждое по 4 секунды
+	local queue: { { text: string, rarity: string? } } = {}
+	local showing = false
+	local function pump()
+		if showing or #queue == 0 then
 			return
 		end
-		bannerToken += 1
-		local token = bannerToken
-		banner.Text = text
-		banner.TextColor3 = rarityColor(if type(payload) == "table" then payload.rarity else nil)
+		showing = true
+		local item = table.remove(queue, 1) :: { text: string, rarity: string? }
+		banner.Text = item.text
+		banner.TextColor3 = rarityColor(item.rarity)
 		banner.Visible = true
 		banner.TextTransparency = 1
 		banner.Size = UDim2.new(0.6, 0, 0, 48)
 		tween(banner, 0.25, { TextTransparency = 0, Size = UDim2.new(0.8, 0, 0, 64) })
 		task.delay(4, function()
-			if token == bannerToken then
-				tween(banner, 0.4, { TextTransparency = 1 })
-				task.wait(0.42)
-				if token == bannerToken then
-					banner.Visible = false
-				end
-			end
+			tween(banner, 0.4, { TextTransparency = 1 })
+			task.wait(0.42)
+			banner.Visible = false
+			showing = false
+			pump()
 		end)
+	end
+	Remotes.get("Announce").OnClientEvent:Connect(function(payload: any)
+		local text = if type(payload) == "table" then payload.text elseif type(payload) == "string" then payload else nil
+		if type(text) ~= "string" then
+			return
+		end
+		if #queue < 5 then
+			table.insert(queue, { text = text, rarity = if type(payload) == "table" and type(payload.rarity) == "string" then payload.rarity else nil })
+		end
+		pump()
 	end)
 
 	-- подсказка и луч к базе, пока несёшь метеорит
