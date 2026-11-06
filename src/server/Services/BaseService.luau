@@ -263,6 +263,7 @@ local function assign(player: Player, save: any)
 	end
 	base.owner = player
 	byPlayer[player] = base
+	player:SetAttribute("BaseIndex", base.index)
 	paint(base, OWNER_COLORS[base.index])
 	base.sign.Text = player.DisplayName .. "'s Base"
 	showAll(base, save)
@@ -285,6 +286,9 @@ local function release(player: Player)
 	byPlayer[player] = nil
 	if not base then
 		return
+	end
+	if player.Parent then
+		player:SetAttribute("BaseIndex", nil)
 	end
 	base.owner = nil
 	base.creatures:ClearAllChildren()
