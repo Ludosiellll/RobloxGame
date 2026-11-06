@@ -84,6 +84,13 @@ return {
 		MaxAnimated = 40,
 	},
 
+	-- Анимации игрока, опубликованные Денисом (docs/ANIMATIONS.md). Пусто — анимация выключена.
+	PlayerAnims = {
+		Carry = "",
+		Push = "",
+		Celebrate = "",
+	},
+
 	Announce = {
 		RarityMin = "Mythic",
 	},

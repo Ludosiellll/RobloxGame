@@ -314,7 +314,7 @@ function MeteorService.drop(id: string, position: Vector3)
 		model:PivotTo(CFrame.new(position + Vector3.new(0, size * 0.35, 0)))
 		model.PrimaryPart.CanCollide = true
 	end
-	task.delay(Config.Carry.DroppedPickupDelay, function()
+	task.delay(Config.Push.DroppedPickupDelay, function()
 		if meteors[id] == m and m.state == "dropped" then
 			addPrompt(m)
 		end
