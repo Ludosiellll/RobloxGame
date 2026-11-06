@@ -36,6 +36,9 @@
       },
       "StudioTools": {
         "$path": "src/studio"
+      },
+      "BiomeSource": {
+        "$path": "assets/biomes"
       }
     }
   }

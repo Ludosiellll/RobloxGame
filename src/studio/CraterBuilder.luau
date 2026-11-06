@@ -1,6 +1,6 @@
 --!strict
 -- Генератор карты-кратера. Только для Studio, в режиме редактирования.
--- Перед запуском скопируйте Workspace.Biomes из старого проекта в Workspace этого плейса.
+-- Биомы берутся из Workspace.Biomes или ServerStorage.BiomeSource (Rojo кладёт туда assets/biomes).
 -- Запуск из Command Bar (View → Command Bar):
 --   require(game.ServerStorage.StudioTools.CraterBuilder).build()
 -- Повторный запуск пересобирает всё: биомы после первого раза лежат в ServerStorage.BiomeSource.

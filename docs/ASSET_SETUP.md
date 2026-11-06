@@ -8,21 +8,22 @@
 
 ## 2. Кратер
 
-1. Открой старый проект `Throw Food For Animals_….rbxlx` во втором окне Studio.
-2. В нём выдели `Workspace → Biomes` → Ctrl+C.
-3. В плейсе игры выдели `Workspace` → Ctrl+V. Должна появиться папка `Workspace.Biomes`.
-4. Если в плейсе игры остался `Baseplate` — удали его.
-5. Открой **View → Command Bar** и выполни:
+Биомы из старого проекта уже лежат в репозитории (`assets/biomes`, 17 файлов), Rojo сам кладёт их в `ServerStorage.BiomeSource`. Открывать старый плейс не нужно.
+
+1. Подключи Rojo и подожди, пока в Explorer появится `ServerStorage.BiomeSource` с 17 папками (Forest, Savana, … NuclearWasteland). Первый раз это может занять минуту: там около 50 000 деталей.
+2. Если в плейсе остался `Baseplate` — удали его.
+3. Открой **View → Command Bar** и выполни:
 
    ```lua
    require(game.ServerStorage.StudioTools.CraterBuilder).build()
    ```
 
-6. Подожди строку в Output: `[Crater] done: … decor parts, … s. Save or publish the place now.` (может занять минуту-две, Studio может подвиснуть — это нормально).
-7. `Workspace.Biomes` после этого сам переедет в `ServerStorage.BiomeSource` — не удаляй его, он нужен для пересборки.
-8. Сохрани плейс: **File → Publish to Roblox** (или Save).
+4. Подожди строку в Output: `[Crater] done: … decor parts, … s. Save or publish the place now.` (минута-две, Studio может подвиснуть — это нормально).
+5. Сохрани плейс: **File → Publish to Roblox** (или Save).
 
-Пересобрать кратер (например, после правок в `Config.Crater`) — снова та же команда. Если Studio ответит старой версией после обновления кода, перезапусти Studio или переподключи Rojo: Command Bar запоминает модули.
+Пересобрать кратер — снова та же команда. Если Studio ответит старой версией после обновления кода, перезапусти Studio или переподключи Rojo: Command Bar запоминает модули.
+
+Если Rojo не справляется с биомами (долго висит или ругается): в `Workspace` создай папку `Biomes`, правой кнопкой по ней → **Insert from File…** → выбери все 17 файлов из `D:\RobloxGameCode\assets\biomes` → запусти ту же команду.
 
 ## 3. Эффекты из плейсов
 

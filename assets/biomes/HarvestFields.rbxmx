@@ -1,0 +1,795 @@
+<roblox xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4"><Item class="Folder" referent="RBX51019">
+<Properties>
+<string name="Name">HarvestFields</string>
+</Properties>
+<Item class="Folder" referent="RBX51020">
+<Properties>
+<string name="Name">FloorSegments</string>
+</Properties>
+<Item class="Part" referent="RBX51021">
+<Properties>
+<bool name="Anchored">true</bool>
+<float name="BackParamA">-0.500000000000</float>
+<float name="BackParamB">0.500000000000</float>
+<token name="BackSurface">5</token>
+<token name="BackSurfaceInput">0</token>
+<float name="BottomParamA">-0.500000000000</float>
+<float name="BottomParamB">0.500000000000</float>
+<token name="BottomSurface">5</token>
+<token name="BottomSurfaceInput">0</token>
+<CoordinateFrame name="CFrame">
+<X>0.000000000000</X>
+<Y>-57.000000000000</Y>
+<Z>-4670.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<bool name="CanCollide">true</bool>
+<bool name="CanQuery">true</bool>
+<bool name="CanTouch">true</bool>
+<bool name="CastShadow">true</bool>
+<string name="CollisionGroup">Default</string>
+<int name="CollisionGroupId">0</int>
+<Color3 name="Color">
+<R>0.313725501299</R>
+<G>0.250980407000</G>
+<B>0.172549024224</B>
+</Color3>
+<bool name="EnableFluidForces">true</bool>
+<float name="FrontParamA">-0.500000000000</float>
+<float name="FrontParamB">0.500000000000</float>
+<token name="FrontSurface">5</token>
+<token name="FrontSurfaceInput">0</token>
+<float name="LeftParamA">-0.500000000000</float>
+<float name="LeftParamB">0.500000000000</float>
+<token name="LeftSurface">5</token>
+<token name="LeftSurfaceInput">0</token>
+<bool name="Locked">false</bool>
+<bool name="Massless">false</bool>
+<token name="Material">256</token>
+<string name="Name">2</string>
+<CoordinateFrame name="PivotOffset">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<float name="Reflectance">0.000000000000</float>
+<float name="RightParamA">-0.500000000000</float>
+<float name="RightParamB">0.500000000000</float>
+<token name="RightSurface">5</token>
+<token name="RightSurfaceInput">0</token>
+<int name="RootPriority">0</int>
+<Vector3 name="RotVelocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+<token name="Shape">1</token>
+<Vector3 name="Size">
+<X>80.000000000000</X>
+<Y>1.000000000000</Y>
+<Z>360.000000000000</Z>
+</Vector3>
+<float name="TopParamA">-0.500000000000</float>
+<float name="TopParamB">0.500000000000</float>
+<token name="TopSurface">5</token>
+<token name="TopSurfaceInput">0</token>
+<float name="Transparency">0.000000000000</float>
+<Vector3 name="Velocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+</Properties>
+<Item class="Texture" referent="RBX51022">
+<Properties>
+<Color3 name="Color3">
+<R>0.431372553110</R>
+<G>0.345098048449</G>
+<B>0.219607844949</B>
+</Color3>
+<token name="Face">5</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51023">
+<Properties>
+<Color3 name="Color3">
+<R>0.431372553110</R>
+<G>0.345098048449</G>
+<B>0.219607844949</B>
+</Color3>
+<token name="Face">4</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51024">
+<Properties>
+<Color3 name="Color3">
+<R>0.431372553110</R>
+<G>0.345098048449</G>
+<B>0.219607844949</B>
+</Color3>
+<token name="Face">3</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51025">
+<Properties>
+<Color3 name="Color3">
+<R>0.431372553110</R>
+<G>0.345098048449</G>
+<B>0.219607844949</B>
+</Color3>
+<token name="Face">0</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51026">
+<Properties>
+<Color3 name="Color3">
+<R>0.431372553110</R>
+<G>0.345098048449</G>
+<B>0.219607844949</B>
+</Color3>
+<token name="Face">1</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51027">
+<Properties>
+<Color3 name="Color3">
+<R>0.431372553110</R>
+<G>0.345098048449</G>
+<B>0.219607844949</B>
+</Color3>
+<token name="Face">2</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+</Item>
+<Item class="Part" referent="RBX51028">
+<Properties>
+<bool name="Anchored">true</bool>
+<float name="BackParamA">-0.500000000000</float>
+<float name="BackParamB">0.500000000000</float>
+<token name="BackSurface">5</token>
+<token name="BackSurfaceInput">0</token>
+<float name="BottomParamA">-0.500000000000</float>
+<float name="BottomParamB">0.500000000000</float>
+<token name="BottomSurface">5</token>
+<token name="BottomSurfaceInput">0</token>
+<CoordinateFrame name="CFrame">
+<X>0.000000000000</X>
+<Y>-56.375000000000</Y>
+<Z>-4490.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<bool name="CanCollide">false</bool>
+<bool name="CanQuery">true</bool>
+<bool name="CanTouch">true</bool>
+<bool name="CastShadow">true</bool>
+<string name="CollisionGroup">Default</string>
+<int name="CollisionGroupId">0</int>
+<Color3 name="Color">
+<R>0.678431391716</R>
+<G>0.678431391716</G>
+<B>0.678431391716</B>
+</Color3>
+<bool name="EnableFluidForces">true</bool>
+<float name="FrontParamA">-0.500000000000</float>
+<float name="FrontParamB">0.500000000000</float>
+<token name="FrontSurface">5</token>
+<token name="FrontSurfaceInput">0</token>
+<float name="LeftParamA">-0.500000000000</float>
+<float name="LeftParamB">0.500000000000</float>
+<token name="LeftSurface">5</token>
+<token name="LeftSurfaceInput">0</token>
+<bool name="Locked">false</bool>
+<bool name="Massless">false</bool>
+<token name="Material">288</token>
+<string name="Name">CrossLine</string>
+<CoordinateFrame name="PivotOffset">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<float name="Reflectance">0.000000000000</float>
+<float name="RightParamA">-0.500000000000</float>
+<float name="RightParamB">0.500000000000</float>
+<token name="RightSurface">5</token>
+<token name="RightSurfaceInput">0</token>
+<int name="RootPriority">0</int>
+<Vector3 name="RotVelocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+<token name="Shape">1</token>
+<Vector3 name="Size">
+<X>80.000000000000</X>
+<Y>0.250000000000</Y>
+<Z>1.000000000000</Z>
+</Vector3>
+<float name="TopParamA">-0.500000000000</float>
+<float name="TopParamB">0.500000000000</float>
+<token name="TopSurface">5</token>
+<token name="TopSurfaceInput">0</token>
+<float name="Transparency">0.600000023842</float>
+<Vector3 name="Velocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+</Properties>
+</Item>
+<Item class="Part" referent="RBX51029">
+<Properties>
+<bool name="Anchored">true</bool>
+<float name="BackParamA">-0.500000000000</float>
+<float name="BackParamB">0.500000000000</float>
+<token name="BackSurface">5</token>
+<token name="BackSurfaceInput">0</token>
+<float name="BottomParamA">-0.500000000000</float>
+<float name="BottomParamB">0.500000000000</float>
+<token name="BottomSurface">5</token>
+<token name="BottomSurfaceInput">0</token>
+<CoordinateFrame name="CFrame">
+<X>0.000000000000</X>
+<Y>-57.000000000000</Y>
+<Z>-4310.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<bool name="CanCollide">true</bool>
+<bool name="CanQuery">true</bool>
+<bool name="CanTouch">true</bool>
+<bool name="CastShadow">true</bool>
+<string name="CollisionGroup">Default</string>
+<int name="CollisionGroupId">0</int>
+<Color3 name="Color">
+<R>0.258823543787</R>
+<G>0.196078434587</G>
+<B>0.156862750649</B>
+</Color3>
+<bool name="EnableFluidForces">true</bool>
+<float name="FrontParamA">-0.500000000000</float>
+<float name="FrontParamB">0.500000000000</float>
+<token name="FrontSurface">5</token>
+<token name="FrontSurfaceInput">0</token>
+<float name="LeftParamA">-0.500000000000</float>
+<float name="LeftParamB">0.500000000000</float>
+<token name="LeftSurface">5</token>
+<token name="LeftSurfaceInput">0</token>
+<bool name="Locked">false</bool>
+<bool name="Massless">false</bool>
+<token name="Material">256</token>
+<string name="Name">1</string>
+<CoordinateFrame name="PivotOffset">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<float name="Reflectance">0.000000000000</float>
+<float name="RightParamA">-0.500000000000</float>
+<float name="RightParamB">0.500000000000</float>
+<token name="RightSurface">5</token>
+<token name="RightSurfaceInput">0</token>
+<int name="RootPriority">0</int>
+<Vector3 name="RotVelocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+<token name="Shape">1</token>
+<Vector3 name="Size">
+<X>80.000000000000</X>
+<Y>1.000000000000</Y>
+<Z>360.000000000000</Z>
+</Vector3>
+<float name="TopParamA">-0.500000000000</float>
+<float name="TopParamB">0.500000000000</float>
+<token name="TopSurface">5</token>
+<token name="TopSurfaceInput">0</token>
+<float name="Transparency">0.000000000000</float>
+<Vector3 name="Velocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+</Properties>
+<Item class="Texture" referent="RBX51030">
+<Properties>
+<Color3 name="Color3">
+<R>0.360784322023</R>
+<G>0.250980407000</G>
+<B>0.164705887437</B>
+</Color3>
+<token name="Face">1</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51031">
+<Properties>
+<Color3 name="Color3">
+<R>0.360784322023</R>
+<G>0.250980407000</G>
+<B>0.164705887437</B>
+</Color3>
+<token name="Face">2</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51032">
+<Properties>
+<Color3 name="Color3">
+<R>0.360784322023</R>
+<G>0.250980407000</G>
+<B>0.164705887437</B>
+</Color3>
+<token name="Face">3</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51033">
+<Properties>
+<Color3 name="Color3">
+<R>0.360784322023</R>
+<G>0.250980407000</G>
+<B>0.164705887437</B>
+</Color3>
+<token name="Face">0</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51034">
+<Properties>
+<Color3 name="Color3">
+<R>0.360784322023</R>
+<G>0.250980407000</G>
+<B>0.164705887437</B>
+</Color3>
+<token name="Face">5</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51035">
+<Properties>
+<Color3 name="Color3">
+<R>0.360784322023</R>
+<G>0.250980407000</G>
+<B>0.164705887437</B>
+</Color3>
+<token name="Face">4</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+</Item>
+<Item class="Part" referent="RBX51036">
+<Properties>
+<bool name="Anchored">true</bool>
+<float name="BackParamA">-0.500000000000</float>
+<float name="BackParamB">0.500000000000</float>
+<token name="BackSurface">5</token>
+<token name="BackSurfaceInput">0</token>
+<float name="BottomParamA">-0.500000000000</float>
+<float name="BottomParamB">0.500000000000</float>
+<token name="BottomSurface">5</token>
+<token name="BottomSurfaceInput">0</token>
+<CoordinateFrame name="CFrame">
+<X>0.000000000000</X>
+<Y>-57.000000000000</Y>
+<Z>-5030.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<bool name="CanCollide">true</bool>
+<bool name="CanQuery">true</bool>
+<bool name="CanTouch">true</bool>
+<bool name="CastShadow">true</bool>
+<string name="CollisionGroup">Default</string>
+<int name="CollisionGroupId">0</int>
+<Color3 name="Color">
+<R>0.227450981736</R>
+<G>0.219607844949</G>
+<B>0.211764708161</B>
+</Color3>
+<bool name="EnableFluidForces">true</bool>
+<float name="FrontParamA">-0.500000000000</float>
+<float name="FrontParamB">0.500000000000</float>
+<token name="FrontSurface">5</token>
+<token name="FrontSurfaceInput">0</token>
+<float name="LeftParamA">-0.500000000000</float>
+<float name="LeftParamB">0.500000000000</float>
+<token name="LeftSurface">5</token>
+<token name="LeftSurfaceInput">0</token>
+<bool name="Locked">false</bool>
+<bool name="Massless">false</bool>
+<token name="Material">256</token>
+<string name="Name">3</string>
+<CoordinateFrame name="PivotOffset">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<float name="Reflectance">0.000000000000</float>
+<float name="RightParamA">-0.500000000000</float>
+<float name="RightParamB">0.500000000000</float>
+<token name="RightSurface">5</token>
+<token name="RightSurfaceInput">0</token>
+<int name="RootPriority">0</int>
+<Vector3 name="RotVelocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+<token name="Shape">1</token>
+<Vector3 name="Size">
+<X>80.000000000000</X>
+<Y>1.000000000000</Y>
+<Z>360.000000000000</Z>
+</Vector3>
+<float name="TopParamA">-0.500000000000</float>
+<float name="TopParamB">0.500000000000</float>
+<token name="TopSurface">5</token>
+<token name="TopSurfaceInput">0</token>
+<float name="Transparency">0.000000000000</float>
+<Vector3 name="Velocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+</Properties>
+<Item class="Texture" referent="RBX51037">
+<Properties>
+<Color3 name="Color3">
+<R>0.313725501299</R>
+<G>0.321568638086</G>
+<B>0.290196090937</B>
+</Color3>
+<token name="Face">5</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51038">
+<Properties>
+<Color3 name="Color3">
+<R>0.313725501299</R>
+<G>0.321568638086</G>
+<B>0.290196090937</B>
+</Color3>
+<token name="Face">4</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51039">
+<Properties>
+<Color3 name="Color3">
+<R>0.313725501299</R>
+<G>0.321568638086</G>
+<B>0.290196090937</B>
+</Color3>
+<token name="Face">3</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51040">
+<Properties>
+<Color3 name="Color3">
+<R>0.313725501299</R>
+<G>0.321568638086</G>
+<B>0.290196090937</B>
+</Color3>
+<token name="Face">2</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51041">
+<Properties>
+<Color3 name="Color3">
+<R>0.313725501299</R>
+<G>0.321568638086</G>
+<B>0.290196090937</B>
+</Color3>
+<token name="Face">0</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+<Item class="Texture" referent="RBX51042">
+<Properties>
+<Color3 name="Color3">
+<R>0.313725501299</R>
+<G>0.321568638086</G>
+<B>0.290196090937</B>
+</Color3>
+<token name="Face">1</token>
+<string name="Name">CheckerGrass</string>
+<float name="OffsetStudsU">0.000000000000</float>
+<float name="OffsetStudsV">0.000000000000</float>
+<float name="StudsPerTileU">8.000000000000</float>
+<float name="StudsPerTileV">8.000000000000</float>
+<Content name="Texture"><url>rbxassetid://406701836</url></Content>
+<float name="Transparency">0.860000014305</float>
+<int name="ZIndex">1</int>
+</Properties>
+</Item>
+</Item>
+<Item class="Part" referent="RBX51043">
+<Properties>
+<bool name="Anchored">true</bool>
+<float name="BackParamA">-0.500000000000</float>
+<float name="BackParamB">0.500000000000</float>
+<token name="BackSurface">5</token>
+<token name="BackSurfaceInput">0</token>
+<float name="BottomParamA">-0.500000000000</float>
+<float name="BottomParamB">0.500000000000</float>
+<token name="BottomSurface">5</token>
+<token name="BottomSurfaceInput">0</token>
+<CoordinateFrame name="CFrame">
+<X>0.000000000000</X>
+<Y>-56.375000000000</Y>
+<Z>-4850.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<bool name="CanCollide">false</bool>
+<bool name="CanQuery">true</bool>
+<bool name="CanTouch">true</bool>
+<bool name="CastShadow">true</bool>
+<string name="CollisionGroup">Default</string>
+<int name="CollisionGroupId">0</int>
+<Color3 name="Color">
+<R>0.678431391716</R>
+<G>0.678431391716</G>
+<B>0.678431391716</B>
+</Color3>
+<bool name="EnableFluidForces">true</bool>
+<float name="FrontParamA">-0.500000000000</float>
+<float name="FrontParamB">0.500000000000</float>
+<token name="FrontSurface">5</token>
+<token name="FrontSurfaceInput">0</token>
+<float name="LeftParamA">-0.500000000000</float>
+<float name="LeftParamB">0.500000000000</float>
+<token name="LeftSurface">5</token>
+<token name="LeftSurfaceInput">0</token>
+<bool name="Locked">false</bool>
+<bool name="Massless">false</bool>
+<token name="Material">288</token>
+<string name="Name">CrossLine</string>
+<CoordinateFrame name="PivotOffset">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+<R00>1.000000000000</R00>
+<R01>0.000000000000</R01>
+<R02>0.000000000000</R02>
+<R10>0.000000000000</R10>
+<R11>1.000000000000</R11>
+<R12>0.000000000000</R12>
+<R20>0.000000000000</R20>
+<R21>0.000000000000</R21>
+<R22>1.000000000000</R22>
+</CoordinateFrame>
+<float name="Reflectance">0.000000000000</float>
+<float name="RightParamA">-0.500000000000</float>
+<float name="RightParamB">0.500000000000</float>
+<token name="RightSurface">5</token>
+<token name="RightSurfaceInput">0</token>
+<int name="RootPriority">0</int>
+<Vector3 name="RotVelocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+<token name="Shape">1</token>
+<Vector3 name="Size">
+<X>80.000000000000</X>
+<Y>0.250000000000</Y>
+<Z>1.000000000000</Z>
+</Vector3>
+<float name="TopParamA">-0.500000000000</float>
+<float name="TopParamB">0.500000000000</float>
+<token name="TopSurface">5</token>
+<token name="TopSurfaceInput">0</token>
+<float name="Transparency">0.600000023842</float>
+<Vector3 name="Velocity">
+<X>0.000000000000</X>
+<Y>0.000000000000</Y>
+<Z>0.000000000000</Z>
+</Vector3>
+</Properties>
+</Item>
+</Item>
+</Item>
+</roblox>
