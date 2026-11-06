@@ -31,7 +31,8 @@ CONTENT = {"Texture", "TextureID", "TextureId", "MeshId", "SoundId", "AnimationI
            "ColorMap", "NormalMap", "MetalnessMap", "RoughnessMap", "LinkedSource", "CageMeshId", "SkyboxBk", "SkyboxDn",
            "SkyboxFt", "SkyboxLf", "SkyboxRt", "SkyboxUp", "SunTextureId", "MoonTextureId", "CursorIcon", "AssetId",
            "Graphic", "VideoContent", "Video"}
-BINARY = {"AttributesSerialize", "PhysicsData", "MeshData", "ChildData", "SmoothGrid", "PhysicsGrid", "MaterialColors",
+# Tags в XML — BinaryString (теги через \0); строкой их Rojo не примет
+BINARY = {"Tags", "AttributesSerialize", "PhysicsData", "MeshData", "ChildData", "SmoothGrid", "PhysicsGrid", "MaterialColors",
           "CollisionGroupData"}
 
 

@@ -5429,7 +5429,7 @@
 <NumberRange name="Speed">0.004735382739454508 0.004735382739454508 </NumberRange>
 <Vector2 name="SpreadAngle"><X>360.0</X><Y>360.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.0 0.0 1.0 0.0 0.0 </NumberSequence>
-<string name="Tags">Emitters</string>
+<BinaryString name="Tags">RW1pdHRlcnM=</BinaryString>
 <Content name="Texture"><url>rbxassetid://13681366618</url></Content>
 <float name="TimeScale">1.0</float>
 <NumberSequence name="Transparency">0.0 0.0 0.0 1.0 0.0 0.0 </NumberSequence>
@@ -5472,7 +5472,7 @@
 <NumberRange name="Speed">0.004735382739454508 0.004735382739454508 </NumberRange>
 <Vector2 name="SpreadAngle"><X>360.0</X><Y>360.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.0 0.0 1.0 0.0 0.0 </NumberSequence>
-<string name="Tags">Emitters</string>
+<BinaryString name="Tags">RW1pdHRlcnM=</BinaryString>
 <Content name="Texture"><url>rbxassetid://13681366618</url></Content>
 <float name="TimeScale">1.0</float>
 <NumberSequence name="Transparency">0.0 0.0 0.0 1.0 0.0 0.0 </NumberSequence>

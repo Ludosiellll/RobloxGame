@@ -258,7 +258,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -300,7 +300,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -342,7 +342,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -384,7 +384,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -510,7 +510,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -552,7 +552,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -594,7 +594,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -636,7 +636,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -732,7 +732,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -774,7 +774,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -816,7 +816,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -858,7 +858,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -954,7 +954,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -996,7 +996,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1038,7 +1038,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1080,7 +1080,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1176,7 +1176,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1218,7 +1218,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1260,7 +1260,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1302,7 +1302,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1398,7 +1398,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1440,7 +1440,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1482,7 +1482,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1524,7 +1524,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1620,7 +1620,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1662,7 +1662,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1704,7 +1704,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1746,7 +1746,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1842,7 +1842,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1884,7 +1884,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1926,7 +1926,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -1968,7 +1968,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2064,7 +2064,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2106,7 +2106,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2148,7 +2148,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2190,7 +2190,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2286,7 +2286,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2328,7 +2328,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2370,7 +2370,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2412,7 +2412,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2508,7 +2508,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2550,7 +2550,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2592,7 +2592,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2634,7 +2634,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2730,7 +2730,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2772,7 +2772,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2814,7 +2814,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2856,7 +2856,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2952,7 +2952,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -2994,7 +2994,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3036,7 +3036,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3078,7 +3078,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3174,7 +3174,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3216,7 +3216,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3258,7 +3258,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3300,7 +3300,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3396,7 +3396,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3438,7 +3438,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3480,7 +3480,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3522,7 +3522,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3618,7 +3618,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>http://www.roblox.com/asset/?id=387288028</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.5042017102241516 0.26875001192092896 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3660,7 +3660,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 0.699999988079071 0.0 1.0 0.699999988079071 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://106043427866088</url></Content>
 <float name="TimeScale">0.12999999523162842</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3702,7 +3702,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.20000000298023224 0.0 1.0 -0.20000000298023224 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://87970239798298</url></Content>
 <float name="TimeScale">0.14000000059604645</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
@@ -3744,7 +3744,7 @@
 <NumberRange name="Speed">-30.618000030517578 -30.618000030517578 </NumberRange>
 <Vector2 name="SpreadAngle"><X>15.0</X><Y>15.0</Y></Vector2>
 <NumberSequence name="Squash">0.0 -0.4000000059604645 0.0 1.0 -0.4000000059604645 0.0 </NumberSequence>
-<string name="Tags">AuraInstance</string>
+<BinaryString name="Tags">QXVyYUluc3RhbmNl</BinaryString>
 <Content name="Texture"><url>rbxassetid://18455273735</url></Content>
 <float name="TimeScale">0.05000000074505806</float>
 <NumberSequence name="Transparency">0.0 1.0 0.0 0.25369977951049805 1.0 0.0 0.4952431321144104 0.0 0.0 1.0 1.0 0.0 </NumberSequence>
