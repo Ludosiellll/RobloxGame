@@ -37,11 +37,7 @@
 <bool name="CastShadow">true</bool>
 <string name="CollisionGroup">Default</string>
 <int name="CollisionGroupId">0</int>
-<Color3 name="Color">
-<R>0.454901963472</R>
-<G>0.337254911661</G>
-<B>0.243137255311</B>
-</Color3>
+<Color3uint8 name="Color3uint8">4285814334</Color3uint8>
 <bool name="EnableFluidForces">true</bool>
 <float name="FrontParamA">-0.500000000000</float>
 <float name="FrontParamB">0.500000000000</float>
@@ -80,8 +76,8 @@
 <Y>0.000000000000</Y>
 <Z>0.000000000000</Z>
 </Vector3>
-<token name="Shape">1</token>
-<Vector3 name="Size">
+<token name="shape">1</token>
+<Vector3 name="size">
 <X>56.000000000000</X>
 <Y>1.000000000000</Y>
 <Z>360.000000000000</Z>
@@ -237,11 +233,7 @@
 <bool name="CastShadow">true</bool>
 <string name="CollisionGroup">Default</string>
 <int name="CollisionGroupId">0</int>
-<Color3 name="Color">
-<R>0.678431391716</R>
-<G>0.678431391716</G>
-<B>0.678431391716</B>
-</Color3>
+<Color3uint8 name="Color3uint8">4289572269</Color3uint8>
 <bool name="EnableFluidForces">true</bool>
 <float name="FrontParamA">-0.500000000000</float>
 <float name="FrontParamB">0.500000000000</float>
@@ -280,8 +272,8 @@
 <Y>0.000000000000</Y>
 <Z>0.000000000000</Z>
 </Vector3>
-<token name="Shape">1</token>
-<Vector3 name="Size">
+<token name="shape">1</token>
+<Vector3 name="size">
 <X>56.000000000000</X>
 <Y>0.250000000000</Y>
 <Z>1.000000000000</Z>
@@ -329,11 +321,7 @@
 <bool name="CastShadow">true</bool>
 <string name="CollisionGroup">Default</string>
 <int name="CollisionGroupId">0</int>
-<Color3 name="Color">
-<R>0.678431391716</R>
-<G>0.678431391716</G>
-<B>0.678431391716</B>
-</Color3>
+<Color3uint8 name="Color3uint8">4289572269</Color3uint8>
 <bool name="EnableFluidForces">true</bool>
 <float name="FrontParamA">-0.500000000000</float>
 <float name="FrontParamB">0.500000000000</float>
@@ -372,8 +360,8 @@
 <Y>0.000000000000</Y>
 <Z>0.000000000000</Z>
 </Vector3>
-<token name="Shape">1</token>
-<Vector3 name="Size">
+<token name="shape">1</token>
+<Vector3 name="size">
 <X>56.000000000000</X>
 <Y>0.250000000000</Y>
 <Z>1.000000000000</Z>
@@ -421,11 +409,7 @@
 <bool name="CastShadow">true</bool>
 <string name="CollisionGroup">Default</string>
 <int name="CollisionGroupId">0</int>
-<Color3 name="Color">
-<R>0.321568638086</R>
-<G>0.329411774874</G>
-<B>0.345098048449</B>
-</Color3>
+<Color3uint8 name="Color3uint8">4283585624</Color3uint8>
 <bool name="EnableFluidForces">true</bool>
 <float name="FrontParamA">-0.500000000000</float>
 <float name="FrontParamB">0.500000000000</float>
@@ -464,8 +448,8 @@
 <Y>0.000000000000</Y>
 <Z>0.000000000000</Z>
 </Vector3>
-<token name="Shape">1</token>
-<Vector3 name="Size">
+<token name="shape">1</token>
+<Vector3 name="size">
 <X>56.000000000000</X>
 <Y>1.000000000000</Y>
 <Z>360.000000000000</Z>
@@ -621,11 +605,7 @@
 <bool name="CastShadow">true</bool>
 <string name="CollisionGroup">Default</string>
 <int name="CollisionGroupId">0</int>
-<Color3 name="Color">
-<R>0.305882364511</R>
-<G>0.290196090937</G>
-<B>0.266666680574</B>
-</Color3>
+<Color3uint8 name="Color3uint8">4283320900</Color3uint8>
 <bool name="EnableFluidForces">true</bool>
 <float name="FrontParamA">-0.500000000000</float>
 <float name="FrontParamB">0.500000000000</float>
@@ -664,8 +644,8 @@
 <Y>0.000000000000</Y>
 <Z>0.000000000000</Z>
 </Vector3>
-<token name="Shape">1</token>
-<Vector3 name="Size">
+<token name="shape">1</token>
+<Vector3 name="size">
 <X>56.000000000000</X>
 <Y>1.000000000000</Y>
 <Z>360.000000000000</Z>
