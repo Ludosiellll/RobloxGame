@@ -23,6 +23,10 @@
 
 Окна Folk Stud (Shop, Index, Rebirth, Settings), продажа, перерождение, лидерборды и профиль игрока — проверки в [docs/CHECKLIST_STAGE2.md](docs/CHECKLIST_STAGE2.md).
 
+## Этап 3: как проверить
+
+Яйца, питомцы и беговые дорожки — проверки в [docs/CHECKLIST_STAGE3.md](docs/CHECKLIST_STAGE3.md). Паки питомцев и дорожек один раз кладутся вручную (шаг 3а в [docs/ASSET_SETUP.md](docs/ASSET_SETUP.md)).
+
 ## Что Rojo трогает, а что нет
 
 Rojo управляет только этими папками (полный список в `default.project.json`):
