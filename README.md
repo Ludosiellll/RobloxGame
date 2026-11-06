@@ -13,6 +13,8 @@
 
 Первая настройка компьютера описана в [docs/SETUP_PC.md](docs/SETUP_PC.md).
 
+Чтобы ИИ-агент на ПК сам запускал Play и смотрел скриншоты, подключи Studio MCP по [docs/STUDIO_MCP.md](docs/STUDIO_MCP.md).
+
 ## Этап 1: как проверить
 
 1. Один раз подготовь плейс по [docs/ASSET_SETUP.md](docs/ASSET_SETUP.md): кратер, эффекты из паков, настройки игры.
