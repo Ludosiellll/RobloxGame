@@ -108,7 +108,8 @@ local function build(player: Player)
 		local src = template(tier)
 		local model = if src then src:Clone() else simple(tier)
 		for _, d in model:GetDescendants() do
-			if d:IsA("LuaSourceContainer") then
+			-- скрипты пака и его кнопка UPGRADE на пульте (без скрипта она ничего не делает)
+			if d:IsA("LuaSourceContainer") or d:IsA("SurfaceGui") then
 				d:Destroy()
 			end
 		end
@@ -125,11 +126,21 @@ local function build(player: Player)
 	folders[player] = folder
 end
 
--- На ленте ли точка: в границах дорожки по X/Z и не выше 8 studs над ней.
+-- Поверхность ленты: BeltWalkingCollider из пака или основание простой дорожки.
+local function beltOf(model: Model): BasePart?
+	local belt = model:FindFirstChild("BeltWalkingCollider", true) or model:FindFirstChild("Root")
+	return if belt and belt:IsA("BasePart") then belt else nil
+end
+
+-- На ленте ли точка: над поверхностью ленты (с запасом 1.5 studs по краям), не выше 7 studs.
 local function onBelt(model: Model, position: Vector3): boolean
-	local box, size = model:GetBoundingBox()
-	local p = box:PointToObjectSpace(position)
-	return math.abs(p.X) <= size.X / 2 and math.abs(p.Z) <= size.Z / 2 and p.Y >= -size.Y / 2 and p.Y <= size.Y / 2 + 8
+	local belt = beltOf(model)
+	if not belt then
+		return false
+	end
+	local p = belt.CFrame:PointToObjectSpace(position)
+	local s = belt.Size
+	return math.abs(p.X) <= s.X / 2 + 1.5 and math.abs(p.Z) <= s.Z / 2 + 1.5 and p.Y >= 0 and p.Y <= s.Y / 2 + 7
 end
 
 local function tick(dt: number)

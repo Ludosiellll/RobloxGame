@@ -137,7 +137,70 @@ local function collectDecor(source: Instance): ({ BasePart }, Bounds)
 	return parts, b
 end
 
-local function placeClone(part: BasePart, frame: CFrame, rel: CFrame, parent: Instance)
+-- Объект декора, к которому относится деталь: самая внешняя модель-предок не больше 60 studs
+-- (дерево, дом, камень), иначе сама деталь. Объект ставится на землю целиком.
+local groupCache: { [Instance]: Instance } = {}
+local function groupOf(part: BasePart, source: Instance): Instance
+	local cached = groupCache[part]
+	if cached then
+		return cached
+	end
+	local key: Instance = part
+	local node: Instance? = part.Parent
+	while node and node ~= source do
+		if node:IsA("Model") then
+			local ok, size = pcall(function()
+				return (node :: Model):GetExtentsSize()
+			end)
+			if ok and math.max(size.X, size.Z) <= 60 then
+				key = node
+			end
+		end
+		node = node.Parent
+	end
+	groupCache[part] = key
+	return key
+end
+
+-- Нижняя точка детали (с учётом поворота).
+local function bottomOf(part: BasePart): number
+	local cf, sz = part.CFrame, part.Size
+	local up = math.abs(cf.RightVector.Y) * sz.X / 2 + math.abs(cf.UpVector.Y) * sz.Y / 2 + math.abs(cf.LookVector.Y) * sz.Z / 2
+	return cf.Position.Y - up
+end
+
+local terrainOnly = RaycastParams.new()
+terrainOnly.FilterType = Enum.RaycastFilterType.Include
+terrainOnly.FilterDescendantsInstances = { workspace.Terrain }
+
+-- Ставит объекты декора зоны на землю под ними; объекты над обрывом или за краем зоны убирает.
+local function settle(groups: { [string]: { BasePart } }, zone: number): number
+	local kept = 0
+	for _, list in groups do
+		local sum, bottom = Vector3.zero, math.huge
+		for _, part in list do
+			sum += part.Position
+			bottom = math.min(bottom, bottomOf(part))
+		end
+		local c = sum / #list
+		local hit = workspace:Raycast(Vector3.new(c.X, c.Y + 300, c.Z), Vector3.new(0, -800, 0), terrainOnly)
+		local inZone = Layout.zoneAt(c.X, c.Z) == zone
+		if hit and inZone and hit.Normal.Y > 0.6 then
+			local lift = hit.Position.Y - bottom - 0.3
+			for _, part in list do
+				part.CFrame += Vector3.new(0, lift, 0)
+			end
+			kept += #list
+		else
+			for _, part in list do
+				part:Destroy()
+			end
+		end
+	end
+	return kept
+end
+
+local function placeClone(part: BasePart, frame: CFrame, rel: CFrame, parent: Instance): BasePart
 	local clone = part:Clone()
 	-- связи со старыми деталями не нужны: всё закреплено
 	for _, d in clone:GetDescendants() do
@@ -148,6 +211,7 @@ local function placeClone(part: BasePart, frame: CFrame, rel: CFrame, parent: In
 	clone.Anchored = true
 	clone.CFrame = frame * rel
 	clone.Parent = parent
+	return clone
 end
 
 -- Декор биома кусками по ChunkLength, разложенными по дуге сектора.
@@ -169,7 +233,7 @@ local function placeBiome(source: Instance, zone: number, out: Instance): number
 	local cx = (b.minX + b.maxX) / 2
 	local angles = Layout.chunkAngles(s.a0, s.a1, rMid, n)
 	local zoneFolder = folder(source.Name, out)
-	local count = 0
+	local groups: { [string]: { BasePart } } = {}
 	for k = 1, n do
 		local theta = angles[k]
 		local zMid = b.minZ + (k - 0.5) * L
@@ -180,13 +244,19 @@ local function placeBiome(source: Instance, zone: number, out: Instance): number
 			local rel = CFrame.new(-cx, -b.groundY, -zMid) * part.CFrame
 			local p = rel.Position
 			rel = rel - p + Vector3.new(p.X * sx, p.Y, p.Z)
-			placeClone(part, frame, rel, model)
-			count += 1
+			local clone = placeClone(part, frame, rel, model)
+			local key = k .. ":" .. groupOf(part, source):GetDebugId()
+			local list = groups[key]
+			if not list then
+				list = {}
+				groups[key] = list
+			end
+			table.insert(list, clone)
 		end
 		model.Parent = zoneFolder
 		breathe()
 	end
-	return count
+	return settle(groups, zone)
 end
 
 -- Ядро: декор Nuclear Wasteland вокруг башен, по центру кратера.
