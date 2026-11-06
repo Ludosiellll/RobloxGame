@@ -56,7 +56,8 @@ function CarryService.applySpeed(player: Player)
 		return
 	end
 	humanoid.UseJumpPower = false
-	humanoid.WalkSpeed = (Config.BaseWalkSpeed + bonus) * mult
+	local petSpeed = 1 + ((player:GetAttribute("BonusSpeed") :: number?) or 0)
+	humanoid.WalkSpeed = (Config.BaseWalkSpeed + bonus) * petSpeed * mult
 	humanoid.JumpHeight = DEFAULT_JUMP * mult
 end
 

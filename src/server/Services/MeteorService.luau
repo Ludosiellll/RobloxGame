@@ -223,7 +223,20 @@ function MeteorService.spawn(zoneIndex: number, opts: { rarity: string?, mutatio
 	if not position then
 		return nil
 	end
-	local rolled = Roll.meteor(zoneIndex, MeteorService.modifiers.luck, rngFn)
+	-- удача: общий множитель × бонус питомцев ближайшего игрока
+	local personal = 1
+	local nearest = math.huge
+	for _, p in Players:GetPlayers() do
+		local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if root then
+			local d = (root.Position - (position :: Vector3)).Magnitude
+			if d < nearest then
+				nearest = d
+				personal = 1 + ((p:GetAttribute("BonusLuck") :: number?) or 0)
+			end
+		end
+	end
+	local rolled = Roll.meteor(zoneIndex, MeteorService.modifiers.luck * personal, rngFn)
 	local rarity = o.rarity or rolled.rarity
 	local mutation = if o.rarity then o.mutation else rolled.mutation
 	local creatureId = if o.rarity then Roll.creature(rarity, rngFn) else rolled.creatureId
