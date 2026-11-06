@@ -22,6 +22,7 @@ start("Geysers")
 start("AnimationPlayer")
 start("Input")
 start("CharacterAnims")
+start("Effects")
 start("DebugPanel")
 
 print(`[Client] Meteor Rain {Config.Version} started`)

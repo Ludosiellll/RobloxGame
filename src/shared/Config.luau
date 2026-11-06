@@ -84,6 +84,23 @@ return {
 		MaxAnimated = 40,
 	},
 
+	-- Эффекты падения и раскрытия (клиент). Звуки: { id, громкость, скорость }.
+	Fx = {
+		FlightDistance = 220, -- откуда прилетает огненный шар
+		FlightDir = { -0.45, 1, 0.25 },
+		Shake = { MaxDistance = 120, Strength = 1.6, Duration = 0.5 },
+		Flash = { MaxDistance = 70, FovPunch = 6 },
+		BoltHeight = 220,
+		Sounds = {
+			Flight = { "rbxassetid://113831670560719", 0.8, 1 },
+			Impact = { "rbxassetid://130565967505452", 1.1, 1 },
+			ImpactLow = { "rbxassetid://139900006476219", 0.7, 1.05 },
+			Crack = { "rbxassetid://9116282646", 1.8, 1 },
+			Close = { "rbxassetid://91289467382888", 1.2, 1 },
+			Reveal = { "rbxasset://sounds/electronicpingshort.wav", 0.9, 1.2 },
+		},
+	},
+
 	-- Анимации игрока, опубликованные Денисом (docs/ANIMATIONS.md). Пусто — анимация выключена.
 	PlayerAnims = {
 		Carry = "",
