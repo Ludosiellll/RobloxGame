@@ -20,14 +20,19 @@ local function path(root: Instance, ...: string): Instance?
 	return node
 end
 
+-- Пак брейнротов вставляется в Studio вручную (Insert from File): Rojo не переносит сетки MeshPart.
+-- Подходит любое из мест: ServerStorage.Packs.Brainrots, ServerStorage["Brainrot Pack!"] и т. п.
 local function brainrotFolder(): Instance?
 	return path(ServerStorage, "Packs", "Brainrots")
+		or path(ServerStorage, "Packs", "Brainrot Pack!")
+		or path(ServerStorage, "Brainrot Pack!")
+		or path(ServerStorage, "Brainrots")
 end
 
 local CHECKS: { Check } = {
 	{ name = "Crater", find = function() return workspace:FindFirstChild("Crater") end, hint = "build it: Command Bar → require(game.ServerStorage.StudioTools.CraterBuilder).build() (docs/ASSET_SETUP.md)" },
 	{ name = "Crater.BaseSlots", find = function() return path(workspace, "Crater", "BaseSlots") end, hint = "rebuild the crater, it creates the 8 base slots" },
-	{ name = "Brainrots pack", find = brainrotFolder, hint = "synced by Rojo from assets/packs/Brainrots.rbxm — connect Rojo" },
+	{ name = "Brainrots pack", find = brainrotFolder, hint = "ServerStorage → Insert from File → assets/packs/Brainrots.rbxm (docs/ASSET_SETUP.md)" },
 	{ name = "VFX (Rojo)", find = function() return ReplicatedStorage:FindFirstChild("VFX") end, hint = "synced by Rojo from assets/vfx — connect Rojo" },
 	{ name = "FireballVFX", find = function() return path(ReplicatedStorage, "Packs", "FireballVFX") end, hint = "copy ReplicatedStorage.FireballVFX from Fireball.rbxl into ReplicatedStorage.Packs" },
 	{ name = "WeatherVFX", find = function() return path(ReplicatedStorage, "Packs", "WeatherVFX") end, hint = "copy ReplicatedStorage.WeatherVFX from Thunderstorm.rbxl into ReplicatedStorage.Packs" },

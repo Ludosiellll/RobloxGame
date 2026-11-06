@@ -31,14 +31,8 @@
     },
     "ServerStorage": {
       "$className": "ServerStorage",
-      "Packs": {
-        "$path": "assets/packs"
-      },
       "StudioTools": {
         "$path": "src/studio"
-      },
-      "BiomeSource": {
-        "$path": "assets/biomes"
       }
     }
   }

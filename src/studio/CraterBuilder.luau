@@ -1,6 +1,6 @@
 --!strict
 -- Генератор карты-кратера. Только для Studio, в режиме редактирования.
--- Биомы берутся из Workspace.Biomes или ServerStorage.BiomeSource (Rojo кладёт туда assets/biomes).
+-- Биомы берутся из Workspace.Biomes (Insert from File из assets/biomes) или ServerStorage.BiomeSource.
 -- Запуск из Command Bar (View → Command Bar):
 --   require(game.ServerStorage.StudioTools.CraterBuilder).build()
 -- Повторный запуск пересобирает всё: биомы после первого раза лежат в ServerStorage.BiomeSource.
@@ -357,13 +357,13 @@ function CraterBuilder.build(): { [string]: any }
 	buildEdges(folder("Edges", root))
 	StarterPlayer.CharacterMaxSlopeAngle = C.MaxSlopeAngle
 	if source and source.Parent == workspace then
-		if ServerStorage:FindFirstChild("BiomeSource") then
-			-- биомы уже есть в ServerStorage (их кладёт Rojo): копия из Workspace больше не нужна
-			source:Destroy()
-		else
-			source.Name = "BiomeSource"
-			source.Parent = ServerStorage
+		-- свежие биомы из Workspace заменяют старую копию в ServerStorage
+		local old = ServerStorage:FindFirstChild("BiomeSource")
+		if old then
+			old:Destroy()
 		end
+		source.Name = "BiomeSource"
+		source.Parent = ServerStorage
 	end
 	stats.seconds = math.floor((os.clock() - started) * 10) / 10
 	print(string.format("[Crater] done: %d decor parts, %.1f s. Save or publish the place now.", stats.parts, stats.seconds))

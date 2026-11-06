@@ -6,24 +6,23 @@
 
 Запусти `update.cmd` и `start.cmd`, в Studio подключи Rojo (Plugins → Rojo → Connect). В Explorer появятся `ServerStorage.StudioTools.CraterBuilder` и `ServerStorage.Packs.Brainrots`.
 
-## 2. Кратер
+## 2. Брейнроты и кратер
 
-Биомы из старого проекта уже лежат в репозитории (`assets/biomes`, 17 файлов), Rojo сам кладёт их в `ServerStorage.BiomeSource`. Открывать старый плейс не нужно.
+Rojo переносит только скрипты и эффекты. Сетки моделей (MeshPart) и Union-детали плагин Rojo задать не может, поэтому большие модели вставляются один раз вручную и сохраняются в плейсе.
 
-1. Подключи Rojo и подожди, пока в Explorer появится `ServerStorage.BiomeSource` с 17 папками (Forest, Savana, … NuclearWasteland). Первый раз это может занять минуту: там около 50 000 деталей.
-2. Если в плейсе остался `Baseplate` — удали его.
-3. Открой **View → Command Bar** и выполни:
+Если раньше Rojo уже создал `ServerStorage.Packs` и `ServerStorage.BiomeSource` — удали обе папки (там модели без формы).
+
+1. **Брейнроты.** В Explorer правой кнопкой по `ServerStorage` → **Insert from File…** → `D:\RobloxGameCode\assets\packs\Brainrots.rbxm`. Появится папка `Brainrot Pack!` с 64 моделями — так и оставь.
+2. **Биомы.** Правой кнопкой по `Workspace` → Insert Object → **Folder**, назови `Biomes`. Правой кнопкой по `Biomes` → **Insert from File…** → выдели все 17 файлов в `D:\RobloxGameCode\assets\biomes` → Открыть.
+3. Если в плейсе остался `Baseplate` — удали его.
+4. **View → Command Bar**, выполни:
 
    ```lua
    require(game.ServerStorage.StudioTools.CraterBuilder).build()
    ```
 
-4. Подожди строку в Output: `[Crater] done: … decor parts, … s. Save or publish the place now.` (минута-две, Studio может подвиснуть — это нормально).
-5. Сохрани плейс: **File → Publish to Roblox** (или Save).
-
-Пересобрать кратер — снова та же команда. Если Studio ответит старой версией после обновления кода, перезапусти Studio или переподключи Rojo: Command Bar запоминает модули.
-
-Если Rojo не справляется с биомами (долго висит или ругается): в `Workspace` создай папку `Biomes`, правой кнопкой по ней → **Insert from File…** → выбери все 17 файлов из `D:\RobloxGameCode\assets\biomes` → запусти ту же команду.
+5. Подожди строку `[Crater] done` в Output (минута-две, Studio может подвиснуть). `Workspace.Biomes` сам переедет в `ServerStorage.BiomeSource`.
+6. Сохрани плейс: **File → Publish to Roblox** (или Save).
 
 ## 3. Эффекты из плейсов
 
