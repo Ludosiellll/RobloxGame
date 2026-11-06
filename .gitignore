@@ -11,3 +11,7 @@ sourcemap.json
 # Python
 __pycache__/
 *.pyc
+
+# Node-зависимости тестового раннера
+tools/luau-test/node_modules/
+tools/luau-test/package-lock.json
