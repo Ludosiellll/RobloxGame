@@ -35,6 +35,14 @@
 
 Остальные эффекты (`MeteorTrail`, `StarExplosion`, `ExplosionPack`, `SmoothDebris`, `GoldenAtmosphere`) Rojo кладёт сам в `ReplicatedStorage.VFX`.
 
+## 3а. Питомцы и беговые дорожки (этап 3)
+
+Rojo не может перенести эти паки сам: в них много моделей верхнего уровня или они лежат в плейсе.
+
+1. **Питомцы.** В `ReplicatedStorage.Packs` создай папку `Pets`. В Explorer правой кнопкой по ней → **Insert from File…** → `assets/imported/KNOCK OUT MODELS BY HEX.rbxm`. Все модели (пингвины и яйца) должны оказаться прямо внутри `ReplicatedStorage.Packs.Pets`. Деталь `WorkBaseplate` удали. Скрипты внутри игра уберёт сама при клонировании.
+2. **Беговые дорожки.** Открой `assets/imported/FreeTreadmillPack.rbxl` во втором окне Studio → выдели `Workspace → TreadmillProgression` → Ctrl+C → в плейсе игры вставь в `ReplicatedStorage.Packs` (Ctrl+V).
+3. Сохрани плейс. Без этих паков игра работает: питомцы — цветные шарики, дорожки — простые полосы.
+
 ## 4. Настройки игры
 
 - `Workspace` → свойство `StreamingEnabled` = true.

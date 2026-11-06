@@ -26,6 +26,7 @@ start("Input")
 start("CharacterAnims")
 start("Effects")
 start("Profile")
+start("PetFollow")
 start("DebugPanel")
 
 print(`[Client] Meteor Rain {Config.Version} started`)

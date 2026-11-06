@@ -16,6 +16,9 @@ local SettingsQueue = require(Shared:WaitForChild("SettingsQueue") :: ModuleScri
 local Client = script.Parent.Parent
 local M = require(Client:WaitForChild("UI"):WaitForChild("FolkStudUI") :: ModuleScript) :: any
 local ClientSettings = require(Client:WaitForChild("Fx"):WaitForChild("ClientSettings") :: ModuleScript) :: any
+local Hatch = require(Client:WaitForChild("Fx"):WaitForChild("Hatch") :: ModuleScript) :: any
+local Eggs = require(Shared:WaitForChild("Catalog"):WaitForChild("Eggs") :: ModuleScript) :: any
+local PetCatalog = require(Shared:WaitForChild("Catalog"):WaitForChild("Pets") :: ModuleScript) :: any
 
 local Menus = {}
 
@@ -169,6 +172,80 @@ local function refreshSell(gui: Instance)
 	end
 end
 
+-- яйца: карточки-«ящики» кита, цена в деньгах игры
+local EGG_COLORS = { "green", "blue", "orange", "gold", "pink", "purple", "lime", "amber", "crimson", "hudBlue", "red" }
+
+local function eggCfg(): any
+	local crates = {}
+	local rebirths = attr("Rebirths", 0)
+	for i, egg in Eggs.List do
+		local contents = {}
+		for _, p in PetCatalog.ofEgg(egg.id) do
+			if #contents < 5 then
+				table.insert(contents, { chance = string.upper(p.rarity), art = M.ART.star })
+			end
+		end
+		table.insert(crates, {
+			id = egg.id,
+			rank = if rebirths >= egg.gate then "EGG" else "REBIRTH " .. egg.gate,
+			name = egg.name,
+			color = M.COLOR[EGG_COLORS[(i - 1) % #EGG_COLORS + 1]],
+			art = M.ART.star,
+			price = Formulas.formatMoney(egg.price),
+			contents = contents,
+		})
+	end
+	return { name = "FolkEggs", title = "Eggs", icon = M.ART.star, crates = crates }
+end
+
+local function fixEggPrices(gui: Instance)
+	for i, egg in Eggs.List do
+		local crate = gui:FindFirstChild("Crate" .. i, true)
+		if crate then
+			local gift = crate:FindFirstChild("Gift", true)
+			if gift and gift:IsA("GuiObject") then
+				gift.Visible = false
+			end
+			for _, d in crate:GetDescendants() do
+				if d:IsA("TextLabel") and (d.Name == "Price" or d.Name == "PriceDrop") then
+					d.Text = "$" .. Formulas.formatMoney(egg.price)
+				end
+			end
+		end
+	end
+end
+
+-- рюкзак питомцев
+local BONUS_NAME = { speed = "SPEED", luck = "LUCK", income = "INCOME" }
+local inventory: any = { pets = {}, equipped = {} }
+
+local function petsCfg(): any
+	local items = {}
+	for _, p in inventory.pets do
+		local def = PetCatalog.byId(p.id)
+		local bonus = if def then Config.Pets.Bonus[def.rarity] or 0 else 0
+		table.insert(items, {
+			id = tostring(p.uid),
+			name = if def then def.name else p.id,
+			rarity = if def then def.rarity else "Common",
+			art = M.ART.star,
+			desc = if def then "From the " .. (Eggs.byId(def.egg) or { name = "?" }).name else "",
+			stats = { { if def then BONUS_NAME[def.bonus] else "BONUS", "+" .. math.floor(bonus * 100 + 0.5) .. "%" }, { "RARITY", if def then string.upper(def.rarity) else "?" } },
+			equipped = table.find(inventory.equipped, p.uid) ~= nil,
+		})
+	end
+	table.sort(items, function(a, b)
+		if a.equipped ~= b.equipped then
+			return a.equipped
+		end
+		return a.id < b.id
+	end)
+	if #items == 0 then
+		items = { { id = "0", name = "No pets yet", rarity = "Common", art = M.ART.star, desc = "Buy an egg in Eggs", stats = {} } }
+	end
+	return { name = "FolkPets", title = "Pets", slots = `{#inventory.equipped}/{Config.Pets.Equipped} EQUIPPED`, sections = { { name = "Pets", color = M.COLOR.green, icon = M.ART.star, items = items } } }
+end
+
 -- настройки
 local function settingsCfg(): any
 	local v = ClientSettings.values
@@ -214,11 +291,16 @@ function Menus.start()
 	for _, r in sellRows() do
 		relabel(sell, "Quest" .. r.id, "SELL")
 	end
-	for _, g in { shop, rebirth, index, settings, sell } do
+	local eggs = M.shop(pg, eggCfg())
+	fixEggPrices(eggs)
+	local pets = M.backpack(pg, petsCfg())
+	for _, g in { shop, rebirth, index, settings, sell, eggs, pets } do
 		g.Enabled = false
 	end
 	local hud = M.hud(pg, { buttons = {
 		{ label = "Shop", icon = M.ART.shop, color = M.COLOR.hudShop, opens = "FolkShop" },
+		{ label = "Eggs", icon = M.ART.star, color = M.COLOR.green, opens = "FolkEggs" },
+		{ label = "Pets", icon = M.ART.star, color = M.COLOR.orange, opens = "FolkPets" },
 		{ label = "Index", icon = M.ART.star, color = M.COLOR.pink, opens = "FolkIndex" },
 		{ label = "Rebirth", icon = M.ART.rebirth, color = M.COLOR.hudBlue, opens = "FolkRebirth" },
 		{ label = "Settings", icon = M.ART.star, color = M.COLOR.crimson, opens = "FolkSettings" },
@@ -283,7 +365,83 @@ function Menus.start()
 			end
 		end,
 	})
-	M.hudLive(hud, { FolkShop = shop, FolkIndex = index, FolkRebirth = rebirth, FolkSettings = settings, FolkSell = sell })
+	local screens = { FolkShop = shop, FolkIndex = index, FolkRebirth = rebirth, FolkSettings = settings, FolkSell = sell, FolkEggs = eggs, FolkPets = pets }
+	M.hudLive(hud, screens)
+
+	M.live(eggs, {
+		buy = function(eggId: string)
+			Remotes.get("Hatch"):FireServer(eggId)
+		end,
+	})
+	-- рюкзак: «EQUIP» берёт питомца, у взятого кнопка «UNEQUIP» убирает
+	local function selectPet(gui: Instance, id: string)
+		M.selectItem(gui, id)
+		local panel = gui:FindFirstChild("Panel", true)
+		local use = panel and panel:FindFirstChild("Use")
+		local done = panel and panel:FindFirstChild("Done")
+		local uid = tonumber(id)
+		if use and done and uid and table.find(inventory.equipped, uid) then
+			use.Visible = true
+			done.Visible = false
+			for _, n in { "Label", "LabelDrop" } do
+				local l = use:FindFirstChild(n)
+				if l and l:IsA("TextLabel") then
+					l.Text = "UNEQUIP"
+				end
+			end
+		end
+	end
+	local function livePets(gui: Instance)
+		M.live(gui, {
+			pick = function(id: string)
+				selectPet(gui, id)
+			end,
+			use = function(id: string)
+				local uid = tonumber(id)
+				if uid and uid > 0 then
+					Remotes.get("Equip"):FireServer(uid, table.find(inventory.equipped, uid) == nil)
+				end
+			end,
+		})
+	end
+	livePets(pets)
+	Remotes.get("PetInventory").OnClientEvent:Connect(function(msg: any)
+		if type(msg) ~= "table" or type(msg.pets) ~= "table" or type(msg.equipped) ~= "table" then
+			return
+		end
+		inventory = msg
+		local wasOpen = screens.FolkPets.Enabled
+		local selected = screens.FolkPets:GetAttribute("Selected")
+		screens.FolkPets:Destroy()
+		local fresh = M.backpack(pg, petsCfg())
+		fresh.Enabled = wasOpen
+		screens.FolkPets = fresh
+		livePets(fresh)
+		if type(selected) == "string" then
+			pcall(selectPet, fresh, selected)
+		end
+	end)
+	Remotes.get("Hatched").OnClientEvent:Connect(function(msg: any)
+		if type(msg) == "table" and type(msg.egg) == "string" and type(msg.pet) == "string" then
+			if screens.FolkEggs.Enabled then
+				M.show(screens.FolkEggs, false)
+			end
+			Hatch.play(msg.egg, msg.pet)
+		end
+	end)
+	player:GetAttributeChangedSignal("Rebirths"):Connect(function()
+		local open = screens.FolkEggs.Enabled
+		screens.FolkEggs:Destroy()
+		local fresh = M.shop(pg, eggCfg())
+		fixEggPrices(fresh)
+		fresh.Enabled = open
+		screens.FolkEggs = fresh
+		M.live(fresh, {
+			buy = function(eggId: string)
+				Remotes.get("Hatch"):FireServer(eggId)
+			end,
+		})
+	end)
 
 	local function onMoney()
 		refreshShop(shop)
