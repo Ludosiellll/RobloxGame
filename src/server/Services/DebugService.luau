@@ -24,6 +24,13 @@ function DebugService.register(name: string, argsHint: string, fn: (Player, { st
 	registry[name] = { hint = argsHint, fn = fn, order = nextOrder }
 end
 
+local afterHooks: { (Player, string) -> () } = {}
+
+-- Вызывается после каждой успешной команды (например, база перерисовывает себя после reset).
+function DebugService.after(fn: (Player, string) -> ())
+	table.insert(afterHooks, fn)
+end
+
 local function number(args: { string }, i: number): number
 	local n = tonumber(args[i])
 	assert(n, "expected a number")
@@ -113,6 +120,14 @@ function DebugService.start()
 			end
 		end
 		local ok, result = pcall(command.fn, player, args)
+		if ok then
+			for _, hook in afterHooks do
+				local hookOk, hookErr = pcall(hook, player, msg.cmd)
+				if not hookOk then
+					warn("[Debug] after-hook failed: " .. tostring(hookErr))
+				end
+			end
+		end
 		local text = if ok then (result or ("OK: " .. msg.cmd)) else ("Error in " .. msg.cmd .. ": " .. tostring(result))
 		print("[Debug] " .. player.Name .. " › " .. msg.cmd .. " " .. table.concat(args, " ") .. " → " .. text)
 		notify:FireClient(player, text)

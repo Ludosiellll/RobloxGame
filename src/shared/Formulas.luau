@@ -63,6 +63,22 @@ function Formulas.placeOrReplace(slots: { Owned }, capacity: number, new: Owned)
 	return "sell", nil
 end
 
+-- Смещение площадки index от центра базы: сетка PadCols × 4 с шагом PadSpacing.
+-- База смотрит на центр кратера (−Z вперёд): площадка 1 — передняя левая, ряды слева направо.
+function Formulas.padOffset(index: number): (number, number)
+	local B = Config.Base
+	local rows = math.ceil(B.SlotsMax / B.PadCols)
+	local col = (index - 1) % B.PadCols
+	local row = (index - 1) // B.PadCols
+	return (col - (B.PadCols - 1) / 2) * B.PadSpacing, (row - (rows - 1) / 2) * B.PadSpacing
+end
+
+-- Точка в координатах базы (центр пола — 0) внутри безопасной зоны: над полом, не выше SafeZoneHeight.
+function Formulas.insideBase(x: number, y: number, z: number): boolean
+	local B = Config.Base
+	return math.abs(x) <= B.Width / 2 and math.abs(z) <= B.Depth / 2 and y >= -5 and y <= B.SafeZoneHeight
+end
+
 -- Можно ли считать точку падения нормальной (не вода, не лава).
 function Formulas.isSpawnHitAllowed(hitName: string): boolean
 	local lower = string.lower(hitName)
