@@ -232,14 +232,10 @@ end
 
 -- Дамбы через лавовый ров к ядру.
 local function buildPaths(out: Instance)
-	local ring3 = C.Rings[#C.Rings]
-	for _, path in C.Paths do
-		local a = math.rad(path.deg)
-		local rOut, yOut = C.Moat.outer + 20, ring3.y
-		local rIn, yIn = C.Moat.inner - 20, C.Core.y
-		local dr, dy = rOut - rIn, yOut - yIn
+	for _, path in Layout.paths() do
+		local dr, dy = path.fromR - path.toR, path.fromY - path.toY
 		local len = math.sqrt(dr * dr + dy * dy)
-		local cf = radialFrame(a, (rOut + rIn) / 2, (yOut + yIn) / 2, math.atan2(dy, dr)) * CFrame.new(0, -2, 0)
+		local cf = radialFrame(path.angle, (path.fromR + path.toR) / 2, (path.fromY + path.toY) / 2, math.atan2(dy, dr)) * CFrame.new(0, -2, 0)
 		local name = Zones.List[path.zone].folder
 		local deck = makePart({ Name = name, Size = Vector3.new(C.PathWidth, 4, len), CFrame = cf, Material = material(C.ZoneMaterials[name]), Color = Color3.fromRGB(120, 96, 70) }, out)
 		for _, side in { -1, 1 } do

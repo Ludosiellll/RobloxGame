@@ -33,7 +33,7 @@ return function(t: any)
 		t.eq(Layout.openingRadius(-60), 1800)
 		t.eq(Layout.openingRadius(-150), 1300)
 		t.eq(Layout.openingRadius(-240), 800)
-		t.eq(Layout.openingRadius(-330), 360)
+		t.eq(Layout.openingRadius(-330), 400)
 		t.near(Layout.openingRadius(-30), 1875)
 		t.eq(Layout.openingRadius(-400), 0)
 	end)
@@ -108,6 +108,26 @@ return function(t: any)
 		end
 		for _, key in { "Plain", "Slope", "Cliff", "Moat", "Ramp" } do
 			t.truthy(type(Config.Crater.Materials[key]) == "string", "no material for " .. key)
+		end
+	end)
+
+	t.test("cliffs and moat are too steep to walk, paths and ramps are walkable", function()
+		local Config = require(Shared.Config) :: any
+		local C = Config.Crater
+		local maxSlope = C.MaxSlopeAngle
+		local function slope(r1: number, y1: number, r2: number, y2: number): number
+			return math.deg(math.atan(math.abs(y1 - y2) / math.abs(r1 - r2)))
+		end
+		t.truthy(slope(C.RimRadius, C.RimY, C.Rings[1].outer, C.Rings[1].y) < maxSlope, "rim slope must be walkable")
+		for k = 1, #C.Rings - 1 do
+			t.truthy(slope(C.Rings[k].inner, C.Rings[k].y, C.Rings[k + 1].outer, C.Rings[k + 1].y) > maxSlope, "cliff " .. k .. " must be too steep")
+		end
+		t.truthy(slope(C.Moat.outer, C.Rings[#C.Rings].y, C.Moat.inner, C.Core.y) > maxSlope, "moat must be too steep")
+		local paths = Layout.paths()
+		t.eq(#paths, 2)
+		for _, p in paths do
+			t.truthy(slope(p.fromR, p.fromY, p.toR, p.toY) < maxSlope, "path must be walkable")
+			t.truthy(p.fromR > C.Moat.outer and p.toR < C.Moat.inner, "path must span the moat")
 		end
 	end)
 

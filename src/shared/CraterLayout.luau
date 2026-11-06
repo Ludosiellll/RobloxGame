@@ -196,6 +196,23 @@ function CraterLayout.ramps(): { { angle: number, fromR: number, fromY: number, 
 	return out
 end
 
+-- Дамбы через лавовый ров: от кольца 3 вниз к ядру.
+function CraterLayout.paths(): { { zone: number, angle: number, fromR: number, fromY: number, toR: number, toY: number } }
+	local out = {}
+	local ring3 = C.Rings[#C.Rings]
+	for _, path in C.Paths do
+		table.insert(out, {
+			zone = path.zone,
+			angle = math.rad(path.deg),
+			fromR = C.Moat.outer + C.PathOverhang,
+			fromY = ring3.y,
+			toR = C.Moat.inner - C.PathOverhang,
+			toY = C.Core.y,
+		})
+	end
+	return out
+end
+
 -- Гейзеры у подножия каждого обрыва: подбрасывают на ярус выше.
 function CraterLayout.geysers(): { { x: number, z: number, y: number, toY: number, angle: number } }
 	local out = {}

@@ -100,10 +100,11 @@ return {
 			{ zones = { 5, 6, 7, 8, 9, 10 }, inner = 880, outer = 1300, y = -150, startDeg = 30 },
 			{ zones = { 11, 12, 13, 14 }, inner = 480, outer = 800, y = -240, startDeg = 45 },
 		},
-		Moat = { inner = 360, outer = 480 }, -- лавовый склон между кольцом 3 и ядром
-		Core = { zone = 17, radius = 360, y = -330 },
+		Moat = { inner = 400, outer = 480 }, -- лавовый обрыв между кольцом 3 и ядром (круче MaxSlopeAngle)
+		Core = { zone = 17, radius = 400, y = -330 },
 		Paths = { { zone = 15, deg = 45 }, { zone = 16, deg = 225 } }, -- дамбы через ров к ядру
 		PathWidth = 80,
+		PathOverhang = 20, -- дамба заходит на кольцо 3 и в ядро на столько studs
 		Ramps = { perTransition = 8, startDeg = 22.5, width = 70, overhang = 24 },
 		Geysers = { perTransition = 8, startDeg = 0, inset = 30, overshoot = 25 },
 		MaxSlopeAngle = 40, -- круче персонаж не заходит: обрывы между кольцами только через спуски и гейзеры
