@@ -13,7 +13,7 @@ return function(t: any)
 		t.eq(d.slots, 6)
 		t.eq(d.creatures, {})
 		t.eq(d.receipts, {})
-		t.eq(d.stats, { caught = 0, pushes = 0, bestCatch = 0 })
+		t.eq(d.stats, { caught = 0, pushes = 0, bestCatch = 0, earned = 0 })
 	end)
 
 	t.test("migrate nil gives default", function()

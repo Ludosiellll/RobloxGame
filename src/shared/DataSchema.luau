@@ -4,6 +4,7 @@
 local Config = require(script.Parent.Config)
 local Rarity = require(script.Parent.Rarity)
 local Creatures = require(script.Parent.Catalog.Creatures)
+local Economy = require(script.Parent.Economy)
 
 export type Owned = { id: string, mutation: string? }
 
@@ -16,7 +17,8 @@ export type PlayerSave = {
 	slots: number,
 	creatures: { Owned },
 	collection: { [string]: boolean },
-	stats: { caught: number, pushes: number, bestCatch: number },
+	stats: { caught: number, pushes: number, bestCatch: number, earned: number },
+	indexClaimed: { [string]: boolean },
 	lastOnline: number,
 	receipts: { string },
 	settings: { [string]: any },
@@ -37,7 +39,8 @@ function DataSchema.default(): PlayerSave
 		slots = Config.Base.SlotsStart,
 		creatures = {},
 		collection = {},
-		stats = { caught = 0, pushes = 0, bestCatch = 0 },
+		stats = { caught = 0, pushes = 0, bestCatch = 0, earned = 0 },
+		indexClaimed = {},
 		lastOnline = 0,
 		receipts = {},
 		settings = {},
@@ -109,7 +112,18 @@ function DataSchema.sanitize(save: PlayerSave): PlayerSave
 		caught = wholeNonNegative(stats.caught),
 		pushes = wholeNonNegative(stats.pushes),
 		bestCatch = wholeNonNegative(stats.bestCatch),
+		earned = wholeNonNegative(stats.earned),
 	}
+
+	local claimed: { [string]: boolean } = {}
+	if type(save.indexClaimed) == "table" then
+		for rarity, v in save.indexClaimed do
+			if v == true and type(rarity) == "string" and Rarity.Info[rarity] then
+				claimed[rarity] = true
+			end
+		end
+	end
+	save.indexClaimed = claimed
 
 	local receipts: { string } = {}
 	if type(save.receipts) == "table" then
@@ -124,9 +138,18 @@ function DataSchema.sanitize(save: PlayerSave): PlayerSave
 	end
 	save.receipts = receipts
 
-	if type(save.settings) ~= "table" then
-		save.settings = {}
+	local settings: { [string]: any } = {}
+	if type(save.settings) == "table" then
+		for id, v in save.settings do
+			if type(id) == "string" then
+				local clean = Economy.setting(id, v)
+				if clean ~= nil then
+					settings[id] = clean
+				end
+			end
+		end
 	end
+	save.settings = settings
 	return save
 end
 

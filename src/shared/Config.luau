@@ -65,6 +65,22 @@ return {
 
 	Rebirth = {
 		IncomeBonus = 0.5,
+		CostBase = 25000, -- порог: CostBase × CostGrowth^n
+		CostGrowth = 3,
+	},
+
+	-- Улучшения за деньги: цена base × growth^n.
+	Upgrades = {
+		Strength = { base = 150, growth = 1.55, max = 20 },
+		Slots = { base = 500, growth = 1.8 },
+	},
+
+	-- Награда за полностью собранную редкость в индексе.
+	IndexRewards = { Common = 1000, Rare = 5000, Epic = 25000, Legendary = 100000, Mythic = 500000, Secret = 2000000 },
+
+	Leaderboard = {
+		RefreshSeconds = 120,
+		Top = 10,
 	},
 
 	Data = {
