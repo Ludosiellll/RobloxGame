@@ -7,3 +7,7 @@ build/
 
 # Генерируется инструментами
 sourcemap.json
+
+# Python
+__pycache__/
+*.pyc
