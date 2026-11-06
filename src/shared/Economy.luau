@@ -82,7 +82,7 @@ function Economy.sellSlot(save: any, slot: any): (boolean, number)
 	end
 	local c = table.remove(save.creatures, slot)
 	local value = Formulas.sellValue(c.id, c.mutation)
-	save.money += value
+	Economy.earn(save, value)
 	return true, value
 end
 
@@ -103,7 +103,7 @@ function Economy.sellBelow(save: any, rarity: any): (number, number)
 		end
 	end
 	save.creatures = keep
-	save.money += total
+	Economy.earn(save, total)
 	return count, total
 end
 
@@ -145,7 +145,7 @@ function Economy.claimIndex(save: any, rarity: any): (boolean, number)
 		end
 	end
 	save.indexClaimed[rarity] = true
-	save.money += reward
+	Economy.earn(save, reward)
 	return true, reward
 end
 

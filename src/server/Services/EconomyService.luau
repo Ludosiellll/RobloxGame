@@ -12,6 +12,7 @@ local Formulas = require(Shared:WaitForChild("Formulas") :: ModuleScript) :: any
 local RateLimit = require(Shared:WaitForChild("RateLimit") :: ModuleScript) :: any
 local Rarity = require(Shared:WaitForChild("Rarity") :: ModuleScript) :: any
 local Remotes = require(Shared:WaitForChild("Remotes") :: ModuleScript) :: any
+local Creatures = require(Shared:WaitForChild("Catalog"):WaitForChild("Creatures") :: ModuleScript) :: any
 
 local Services = script.Parent
 local PlayerData = require(Services:WaitForChild("PlayerData") :: ModuleScript) :: any
@@ -56,8 +57,9 @@ function EconomyService.sellSlot(player: Player, slot: number): boolean
 	local c = save.creatures[slot]
 	local ok, got = Economy.sellSlot(save, slot)
 	if ok then
-		BaseService.refresh(player)
-		notify(player, `Sold {c and c.id or "creature"} for {money(got)}`)
+		BaseService.refreshFrom(player, slot)
+		local def = c and Creatures.byId(c.id)
+		notify(player, `Sold {if def then def.name else "creature"} for {money(got)}`)
 		sendSellList(player, save, false)
 	end
 	return ok
@@ -73,7 +75,11 @@ local function onUpgrade(player: Player, kind: any)
 	end
 	local ok, why = Economy.buyUpgrade(save, kind)
 	if ok then
-		BaseService.refresh(player)
+		if kind == "Slots" then
+			BaseService.refreshPads(player)
+		else
+			BaseService.sync(player)
+		end
 		CarryService.applySpeed(player)
 		notify(player, if kind == "Strength" then `Strength {save.strength}!` else `Base Slots {save.slots}!`)
 	elseif why == "money" then
@@ -118,10 +124,10 @@ local function onRebirth(player: Player)
 	end
 	BaseService.refresh(player)
 	CarryService.applySpeed(player)
-	PlayerData.saveNow(player)
 	local m = 1 + Config.Rebirth.IncomeBonus * save.rebirths
 	notify(player, `Rebirth {save.rebirths}! Income x{m}`)
 	Remotes.get("Announce"):FireAllClients({ text = `{player.DisplayName} reached Rebirth {save.rebirths}!`, rarity = "Legendary" })
+	task.spawn(PlayerData.saveNow, player)
 end
 
 local function onSettings(player: Player, id: any, value: any)
@@ -153,7 +159,7 @@ local function onClaimIndex(player: Player)
 		end
 	end
 	if total > 0 then
-		BaseService.refresh(player)
+		BaseService.sync(player)
 		notify(player, "Index reward " .. money(total))
 	else
 		notify(player, "Collect every creature of a rarity to claim")

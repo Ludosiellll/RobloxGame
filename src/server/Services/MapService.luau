@@ -157,7 +157,9 @@ local function watchGeyser(part: Instance)
 	part.Touched:Connect(function(hit)
 		local character = hit:FindFirstAncestorOfClass("Model")
 		local player = character and Players:GetPlayerFromCharacter(character)
-		if player then
+		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		-- касание сообщает клиент: засчитываем, только если персонаж и правда у гейзера
+		if player and root and (root.Position - part.Position).Magnitude <= part.Size.Magnitude + 10 then
 			player:SetAttribute("LaunchedAt", workspace:GetServerTimeNow())
 		end
 	end)

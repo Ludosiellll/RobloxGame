@@ -73,7 +73,8 @@ function UiData.sellRows(creatures: { any }): { any }
 				total += Formulas.sellValue(c.id, c.mutation)
 			end
 		end
-		table.insert(rows, { rarity = Rarity.Order[i], count = count, total = total })
+		-- продаёт Legendary и сильнее — нужно второе нажатие-подтверждение
+		table.insert(rows, { rarity = Rarity.Order[i], count = count, total = total, confirm = i > Rarity.index("Legendary") })
 	end
 	return rows
 end

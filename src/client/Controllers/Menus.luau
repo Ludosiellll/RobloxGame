@@ -11,6 +11,7 @@ local Config = require(Shared:WaitForChild("Config") :: ModuleScript) :: any
 local Formulas = require(Shared:WaitForChild("Formulas") :: ModuleScript) :: any
 local Remotes = require(Shared:WaitForChild("Remotes") :: ModuleScript) :: any
 local UiData = require(Shared:WaitForChild("UiData") :: ModuleScript) :: any
+local SettingsQueue = require(Shared:WaitForChild("SettingsQueue") :: ModuleScript) :: any
 
 local Client = script.Parent.Parent
 local M = require(Client:WaitForChild("UI"):WaitForChild("FolkStudUI") :: ModuleScript) :: any
@@ -79,7 +80,7 @@ local function shopRows(): { any }
 end
 
 local function buildShop(pg: Instance): ScreenGui
-	local gui = M.quests(pg, { name = "FolkShop", title = "Shop", icon = M.ART.shop, sections = { { name = "Upgrades", timer = "", icon = M.ART.star, color = M.COLOR.gold, quests = shopRows() } } })
+	local gui = M.quests(pg, { name = "FolkShop", title = "Shop", icon = M.ART.shop, sections = { { name = "Upgrades", icon = M.ART.star, color = M.COLOR.gold, quests = shopRows() } } })
 	for _, r in shopRows() do
 		relabel(gui, "Quest" .. r.id, "BUY")
 	end
@@ -149,7 +150,8 @@ local function sellRows(): { any }
 			need = math.max(r.count, 1),
 			reward = "$" .. Formulas.formatMoney(r.total),
 			state = if r.count > 0 then "ready" else "done",
-			color = M.COLOR.green,
+			confirm = r.confirm,
+			color = if r.confirm then M.COLOR.crimson else M.COLOR.green,
 			icon = M.ART.star,
 		})
 	end
@@ -208,7 +210,7 @@ function Menus.start()
 	local rebirth = M.rebirth(pg, rebirthCfg())
 	local index = M.index(pg, indexCfg())
 	local settings = M.settings(pg, settingsCfg())
-	local sell = M.quests(pg, { name = "FolkSell", title = "Sell", icon = M.ART.star, sections = { { name = "Sell", timer = "", icon = M.ART.star, color = M.COLOR.green, quests = sellRows() } } })
+	local sell = M.quests(pg, { name = "FolkSell", title = "Sell", icon = M.ART.star, sections = { { name = "Sell", icon = M.ART.star, color = M.COLOR.green, quests = sellRows() } } })
 	for _, r in sellRows() do
 		relabel(sell, "Quest" .. r.id, "SELL")
 	end
@@ -243,18 +245,45 @@ function Menus.start()
 			Remotes.get("ClaimIndex"):FireServer()
 		end,
 	})
+	-- продажа Legendary и сильнее — два нажатия: первое спрашивает «SURE?»
+	local armed: { [string]: number } = {}
 	M.live(sell, {
 		claim = function(rarity: string)
+			local needsConfirm = false
+			for _, r in sellRows() do
+				if r.id == rarity then
+					needsConfirm = r.confirm == true
+				end
+			end
+			local now = os.clock()
+			if needsConfirm and (armed[rarity] or 0) < now then
+				armed[rarity] = now + 3
+				relabel(sell, "Quest" .. rarity, "SURE?")
+				task.delay(3, function()
+					if (armed[rarity] or 0) <= os.clock() then
+						relabel(sell, "Quest" .. rarity, "SELL")
+					end
+				end)
+				return
+			end
+			armed[rarity] = nil
+			relabel(sell, "Quest" .. rarity, "SELL")
 			Remotes.get("Sell"):FireServer({ mode = "below", rarity = rarity })
 		end,
 	})
+	-- ползунок шлёт значение на каждом шаге: на сервер уходит последнее через 0.4 с
+	local queue = SettingsQueue.new()
 	M.settingsLive(settings, {
 		change = function(id: string, value: any)
 			ClientSettings.set(id, value)
-			Remotes.get("Settings"):FireServer(id, value)
+			if queue.push(id, value) then
+				task.delay(0.4, function()
+					Remotes.get("Settings"):FireServer(id, queue.take(id))
+				end)
+			end
 		end,
 	})
-	M.hudLive(hud, { FolkShop = shop, FolkIndex = index, FolkRebirth = rebirth, FolkSettings = settings })
+	M.hudLive(hud, { FolkShop = shop, FolkIndex = index, FolkRebirth = rebirth, FolkSettings = settings, FolkSell = sell })
 
 	local function onMoney()
 		refreshShop(shop)
@@ -294,6 +323,11 @@ function Menus.start()
 		sellCreatures = msg.creatures
 		refreshSell(sell)
 		if msg.open and not sell.Enabled then
+			for _, g in { shop, index, rebirth, settings } do
+				if g.Enabled then
+					M.show(g, false)
+				end
+			end
 			M.show(sell, true)
 		end
 	end)

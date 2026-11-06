@@ -238,10 +238,17 @@ local function showCreature(base: Base, slot: number, owned: { id: string, mutat
 	model.Parent = base.creatures
 end
 
+local function showSafe(base: Base, slot: number, owned: { id: string, mutation: string? })
+	local ok, err = pcall(showCreature, base, slot, owned)
+	if not ok then
+		warn(`[Base] can't show {owned.id} on slot {slot}: {err}`)
+	end
+end
+
 local function showAll(base: Base, save: any)
 	base.creatures:ClearAllChildren()
 	for slot, owned in save.creatures do
-		showCreature(base, slot, owned)
+		showSafe(base, slot, owned)
 	end
 	refreshPads(base, save.slots)
 end
@@ -403,6 +410,43 @@ function BaseService.refresh(player: Player)
 	end
 end
 
+-- Только деньги, атрибуты и leaderstats, без пересборки существ (покупка силы, награда индекса).
+function BaseService.sync(player: Player)
+	local save = PlayerData.get(player)
+	if save then
+		syncStats(player, save)
+	end
+end
+
+-- Площадки после покупки мест.
+function BaseService.refreshPads(player: Player)
+	local base = byPlayer[player]
+	local save = PlayerData.get(player)
+	if base and save then
+		refreshPads(base, save.slots)
+		syncStats(player, save)
+	end
+end
+
+-- После продажи места fromSlot список сдвинулся: пересобрать места начиная с него.
+function BaseService.refreshFrom(player: Player, fromSlot: number)
+	local base = byPlayer[player]
+	local save = PlayerData.get(player)
+	if not base or not save then
+		return
+	end
+	for _, child in base.creatures:GetChildren() do
+		local s = child:GetAttribute("Slot")
+		if type(s) == "number" and s >= fromSlot then
+			child:Destroy()
+		end
+	end
+	for slot = fromSlot, #save.creatures do
+		showSafe(base, slot, save.creatures[slot])
+	end
+	syncStats(player, save)
+end
+
 function BaseService.addCreature(player: Player, creatureId: string, mutation: string?): "place" | "replace" | "sell"
 	local save = PlayerData.get(player)
 	local base = byPlayer[player]
@@ -495,11 +539,16 @@ function BaseService.start()
 		while true do
 			task.wait(1)
 			for player, _ in byPlayer do
-				local save = PlayerData.get(player)
-				if save and player.Parent then
-					local income = Formulas.incomePerSecond(save.creatures, save.rebirths, incomeMultiplier(player))
-					Economy.earn(save, income)
-					syncStats(player, save)
+				local ok, err = pcall(function()
+					local save = PlayerData.get(player)
+					if save and player.Parent then
+						local income = Formulas.incomePerSecond(save.creatures, save.rebirths, incomeMultiplier(player))
+						Economy.earn(save, income)
+						syncStats(player, save)
+					end
+				end)
+				if not ok then
+					warn(`[Base] income for {player.Name} failed: {err}`)
 				end
 			end
 		end

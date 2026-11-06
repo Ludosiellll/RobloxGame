@@ -5,6 +5,7 @@
 
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -125,7 +126,8 @@ local function refresh()
 	for _, board in BOARDS do
 		local store = stores[board.key]
 		if store and not PlayerData.isMemoryMode() then
-			for _, p in Players:GetPlayers() do
+			-- из Studio не пишем: отладочные деньги и существа не должны попасть в настоящие доски
+			for _, p in if RunService:IsStudio() then {} else Players:GetPlayers() do
 				local save = PlayerData.get(p)
 				if save then
 					local ok = pcall(function()

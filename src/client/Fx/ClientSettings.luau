@@ -11,22 +11,23 @@ ClientSettings.values = { music = 70, sfx = 100, shake = true, lowDetail = false
 local changed = Instance.new("BindableEvent")
 ClientSettings.changed = changed.Event
 
-local function group(name: string): SoundGroup
+local function group(name: string, key: string): SoundGroup
 	local g = SoundService:FindFirstChild(name)
 	if not g then
 		g = Instance.new("SoundGroup")
 		g.Name = name
+		g.Volume = ((ClientSettings.values[key] :: number?) or 100) / 100 -- у SoundGroup по умолчанию 0.5
 		g.Parent = SoundService
 	end
 	return g :: SoundGroup
 end
 
 function ClientSettings.sfxGroup(): SoundGroup
-	return group("Sfx")
+	return group("Sfx", "sfx")
 end
 
 function ClientSettings.musicGroup(): SoundGroup
-	return group("Music")
+	return group("Music", "music")
 end
 
 function ClientSettings.set(id: string, value: any)
