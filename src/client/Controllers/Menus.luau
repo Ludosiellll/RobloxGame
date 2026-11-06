@@ -215,6 +215,43 @@ local function fixEggPrices(gui: Instance)
 	end
 end
 
+-- Кит ставит «ящики» в один ряд — 11 яиц не влезают. Раскладываем по 3 в ряд и переименовываем раздел.
+local function gridEggs(gui: Instance)
+	local scroll = gui:FindFirstChild("Scroll", true)
+	local content = scroll and scroll:FindFirstChild("Content")
+	if not content or not scroll or not scroll:IsA("ScrollingFrame") or not content:IsA("GuiObject") then
+		return
+	end
+	local first = content:FindFirstChild("Crate1") :: GuiObject?
+	local firstShadow = content:FindFirstChild("Crate1Shadow") :: GuiObject?
+	if not first then
+		return
+	end
+	local COL, ROW = 280, 406
+	local rows = 0
+	for _, child in content:GetChildren() do
+		local idx = tonumber(string.match(child.Name, "^Crate(%d+)$") or string.match(child.Name, "^Crate(%d+)Shadow$"))
+		if idx and child:IsA("GuiObject") then
+			local base = if string.find(child.Name, "Shadow") and firstShadow then firstShadow else first
+			local col, row = (idx - 1) % 3, (idx - 1) // 3
+			rows = math.max(rows, row + 1)
+			child.Position = base.Position + UDim2.fromOffset(col * COL, row * ROW)
+		end
+	end
+	local height = first.Position.Y.Offset + rows * ROW + 20
+	content.Size = UDim2.fromOffset(content.Size.X.Offset, height)
+	scroll.CanvasSize = UDim2.fromOffset(0, height + 12)
+	for _, d in gui:GetDescendants() do
+		if d:IsA("TextLabel") then
+			if d.Text == "CRATES" then
+				d.Text = "EGGS"
+			elseif d.Text == "Crates" then
+				d.Text = "Eggs"
+			end
+		end
+	end
+end
+
 -- рюкзак питомцев
 local BONUS_NAME = { speed = "SPEED", luck = "LUCK", income = "INCOME" }
 local inventory: any = { pets = {}, equipped = {} }
@@ -238,7 +275,7 @@ local function petsCfg(): any
 		if a.equipped ~= b.equipped then
 			return a.equipped
 		end
-		return a.id < b.id
+		return (tonumber(a.id) or 0) < (tonumber(b.id) or 0)
 	end)
 	if #items == 0 then
 		items = { { id = "0", name = "No pets yet", rarity = "Common", art = M.ART.star, desc = "Buy an egg in Eggs", stats = {} } }
@@ -293,6 +330,7 @@ function Menus.start()
 	end
 	local eggs = M.shop(pg, eggCfg())
 	fixEggPrices(eggs)
+	gridEggs(eggs)
 	local pets = M.backpack(pg, petsCfg())
 	for _, g in { shop, rebirth, index, settings, sell, eggs, pets } do
 		g.Enabled = false
@@ -305,6 +343,8 @@ function Menus.start()
 		{ label = "Rebirth", icon = M.ART.rebirth, color = M.COLOR.hudBlue, opens = "FolkRebirth" },
 		{ label = "Settings", icon = M.ART.star, color = M.COLOR.crimson, opens = "FolkSettings" },
 	} })
+	-- рельса ужимается под высоту экрана целиком (6 кнопок по 124 px и поля)
+	hud:SetAttribute("FitHeight", 6 * 124 + 140)
 
 	M.live(shop, {
 		claim = function(id: string)
@@ -391,6 +431,53 @@ function Menus.start()
 			end
 		end
 	end
+	-- кнопка удаления питомца: первое нажатие спрашивает SURE?, второе удаляет
+	local function addDelete(gui: Instance)
+		local panel = gui:FindFirstChild("Panel", true)
+		if not panel or not panel:IsA("GuiObject") then
+			return
+		end
+		local b = Instance.new("TextButton")
+		b.Name = "Delete"
+		b.AnchorPoint = Vector2.new(1, 0)
+		b.Position = UDim2.new(1, -14, 0, 14)
+		b.Size = UDim2.fromOffset(120, 44)
+		b.BackgroundColor3 = Color3.fromRGB(224, 0, 18)
+		b.Text = "DELETE"
+		b.TextScaled = true
+		b.TextColor3 = Color3.new(1, 1, 1)
+		b.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+		b.ZIndex = 20
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 12)
+		corner.Parent = b
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 3
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		stroke.Parent = b
+		b.Parent = panel
+		local armed = 0
+		b.Activated:Connect(function()
+			local uid = tonumber(gui:GetAttribute("Selected") :: string?)
+			if not uid or uid <= 0 then
+				return
+			end
+			if os.clock() > armed then
+				armed = os.clock() + 3
+				b.Text = "SURE?"
+				task.delay(3, function()
+					if os.clock() >= armed then
+						b.Text = "DELETE"
+					end
+				end)
+				return
+			end
+			armed = 0
+			b.Text = "DELETE"
+			Remotes.get("DeletePet"):FireServer(uid)
+		end)
+	end
+
 	local function livePets(gui: Instance)
 		M.live(gui, {
 			pick = function(id: string)
@@ -405,18 +492,50 @@ function Menus.start()
 		})
 	end
 	livePets(pets)
+	addDelete(pets)
+	local function uidSet(list: { any }): string
+		local ids = {}
+		for _, p in list do
+			table.insert(ids, p.uid)
+		end
+		table.sort(ids)
+		return table.concat(ids, ",")
+	end
 	Remotes.get("PetInventory").OnClientEvent:Connect(function(msg: any)
 		if type(msg) ~= "table" or type(msg.pets) ~= "table" or type(msg.equipped) ~= "table" then
 			return
 		end
+		local samePets = uidSet(msg.pets) == uidSet(inventory.pets)
 		inventory = msg
-		local wasOpen = screens.FolkPets.Enabled
-		local selected = screens.FolkPets:GetAttribute("Selected")
-		screens.FolkPets:Destroy()
+		local current = screens.FolkPets
+		local selected = current:GetAttribute("Selected")
+		if samePets then
+			-- изменилось только «кто с игроком»: правим окно на месте, без пересборки и прыжка вверх
+			for _, p in inventory.pets do
+				local holder = current:FindFirstChild("Item" .. p.uid, true)
+				local equippedTag = holder and holder:FindFirstChild("Equipped", true)
+				if equippedTag and equippedTag:IsA("GuiObject") then
+					equippedTag.Visible = table.find(inventory.equipped, p.uid) ~= nil
+				end
+			end
+			local slots = current:FindFirstChild("Slots", true)
+			local slotsText = slots and slots:FindFirstChild("Text")
+			if slotsText and slotsText:IsA("TextLabel") then
+				slotsText.Text = `{#inventory.equipped}/{Config.Pets.Equipped} EQUIPPED`
+			end
+			if type(selected) == "string" then
+				pcall(selectPet, current, selected)
+			end
+			return
+		end
+		local wasOpen = current.Enabled
+		current.Enabled = false
+		current:Destroy()
 		local fresh = M.backpack(pg, petsCfg())
-		fresh.Enabled = wasOpen
 		screens.FolkPets = fresh
 		livePets(fresh)
+		addDelete(fresh)
+		fresh.Enabled = wasOpen
 		if type(selected) == "string" then
 			pcall(selectPet, fresh, selected)
 		end
@@ -434,13 +553,14 @@ function Menus.start()
 		screens.FolkEggs:Destroy()
 		local fresh = M.shop(pg, eggCfg())
 		fixEggPrices(fresh)
-		fresh.Enabled = open
+		gridEggs(fresh)
 		screens.FolkEggs = fresh
 		M.live(fresh, {
 			buy = function(eggId: string)
 				Remotes.get("Hatch"):FireServer(eggId)
 			end,
 		})
+		fresh.Enabled = open
 	end)
 
 	local function onMoney()
@@ -481,8 +601,8 @@ function Menus.start()
 		sellCreatures = msg.creatures
 		refreshSell(sell)
 		if msg.open and not sell.Enabled then
-			for _, g in { shop, index, rebirth, settings } do
-				if g.Enabled then
+			for name, g in screens do
+				if name ~= "FolkSell" and g.Enabled then
 					M.show(g, false)
 				end
 			end

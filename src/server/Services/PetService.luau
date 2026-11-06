@@ -99,6 +99,16 @@ local function onEquip(player: Player, uid: any, on: any)
 	PetService.sync(player)
 end
 
+local function onDelete(player: Player, uid: any)
+	if type(uid) ~= "number" or not equipLimit.allow(player.UserId, os.clock()) then
+		return
+	end
+	local save = PlayerData.get(player)
+	if save and Pets.delete(save, uid) then
+		PetService.sync(player)
+	end
+end
+
 local function registerDebug()
 	DebugService.register("egg", "<egg id>", function(player, args)
 		local egg = Eggs.byId(args[1] or "")
@@ -128,6 +138,7 @@ function PetService.start()
 	end)
 	Remotes.get("Hatch").OnServerEvent:Connect(onHatch)
 	Remotes.get("Equip").OnServerEvent:Connect(onEquip)
+	Remotes.get("DeletePet").OnServerEvent:Connect(onDelete)
 	PlayerData.onLoaded(function(player)
 		PetService.sync(player)
 	end)

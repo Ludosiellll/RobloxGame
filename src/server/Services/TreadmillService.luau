@@ -116,6 +116,7 @@ local function build(player: Player)
 		model:SetAttribute("OwnerUserId", player.UserId)
 		model:PivotTo(base.frame * CFrame.new(-(Config.Base.Width / 2 + 12), 0.5, -14 + (i - 1) * 14))
 		label(model, tier)
+		model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- лента и Root приходят к клиенту вместе
 		CollectionService:AddTag(model, "Treadmill")
 		model.Parent = folder
 	end

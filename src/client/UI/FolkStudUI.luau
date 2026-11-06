@@ -1,5 +1,6 @@
 --!strict
--- Кит Folk Stud UI из навыка Дениса (assets/imported/folk-stud-ui.skill, scripts/FolkStudUI.lua), без изменений.
+-- Кит Folk Stud UI из навыка Дениса (assets/imported/folk-stud-ui.skill, scripts/FolkStudUI.lua).
+-- Одно изменение: рельса может уменьшаться до 0.3 (было 0.6), иначе 7 кнопок не влезают на телефон.
 -- Строит окна в PlayerGui во время игры; Menus.luau наполняет их данными игры.
 --[[ FolkStudUI (ModuleScript): white stud menus for Roblox.
 	M.shop, M.quests, M.backpack, M.index, M.settings, M.rebirth and M.hud, each (parent, cfg), build a ScreenGui. Call them from Studio in Edit mode so the GUI is editable in StarterGui,
@@ -816,7 +817,7 @@ function M.live(gui, on)
 	local function fit()
 		local v = workspace.CurrentCamera.ViewportSize
 		local ref = gui:GetAttribute("FitHeight")
-		root.Fit.Scale = ref and math.clamp(v.Y / ref, 0.6, 1) or math.min(1, v.Y / gui:GetAttribute("NeedH"), (v.X - 16) / gui:GetAttribute("NeedW"))
+		root.Fit.Scale = ref and math.clamp(v.Y / ref, 0.3, 1) or math.min(1, v.Y / gui:GetAttribute("NeedH"), (v.X - 16) / gui:GetAttribute("NeedW"))
 	end
 	fit()
 	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
