@@ -190,7 +190,7 @@ function EconomyService.start()
 	Remotes.get("Rebirth").OnServerEvent:Connect(onRebirth)
 	Remotes.get("Settings").OnServerEvent:Connect(onSettings)
 	Remotes.get("ClaimIndex").OnServerEvent:Connect(onClaimIndex)
-	PlayerData.loaded.Event:Connect(onLoaded)
+	PlayerData.onLoaded(onLoaded)
 	for _, player in Players:GetPlayers() do
 		local save = PlayerData.get(player)
 		if save then

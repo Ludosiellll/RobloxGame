@@ -159,39 +159,48 @@ local function pickUp(player: Player, id: string)
 	CarryService.applySpeed(player)
 end
 
-local function deliverAndCheck()
-	for player, c in carrying do
-		local _, humanoid, root = parts(player)
-		if not root or not humanoid or humanoid.Health <= 0 then
-			CarryService.forceDrop(player, "lost")
-		elseif BaseService.isInOwnBase(player, root.Position) then
-			local m = MeteorService.get(c.id)
-			if m then
-				BaseService.addCreature(player, m.creatureId, m.mutation)
-				MeteorService.consume(c.id)
-			end
-			clear(player)
-		end
+-- Законно ли игрок переместился с прошлой проверки. Нет — метеорит падает в последней нормальной точке,
+-- игрока возвращает туда же. Проверка идёт перед доставкой, поэтому телепорт на базу не засчитывается.
+local function movedLegally(player: Player, root: BasePart, humanoid: Humanoid, now: number): boolean
+	local prev = lastGood[player]
+	if not prev then
+		lastGood[player] = { pos = root.Position, t = now }
+		return true
+	end
+	local launched = (player:GetAttribute("LaunchedAt") :: number?) or 0
+	local sinceLaunch = workspace:GetServerTimeNow() - launched
+	local flat = Vector3.new(root.Position.X - prev.pos.X, 0, root.Position.Z - prev.pos.Z).Magnitude
+	if Formulas.moveAllowed(flat, now - prev.t, humanoid.WalkSpeed, sinceLaunch) then
+		lastGood[player] = { pos = root.Position, t = now }
+		return true
+	end
+	CarryService.forceDrop(player, "speed", prev.pos)
+	root.CFrame = CFrame.new(prev.pos) * root.CFrame.Rotation
+	return false
+end
+
+-- Доставка: сначала забираем метеорит и снимаем переноску, потом кладём существо —
+-- ошибка при постройке модели не даст доставить один метеорит дважды.
+local function deliver(player: Player, c: Carry)
+	local m = MeteorService.get(c.id)
+	clear(player)
+	if not m then
+		return
+	end
+	local creatureId, mutation = m.creatureId, m.mutation
+	MeteorService.consume(c.id)
+	local ok, err = pcall(BaseService.addCreature, player, creatureId, mutation)
+	if not ok then
+		warn(`[Carry] delivery for {player.Name} failed: {err}`)
 	end
 end
 
-local function speedCheck()
-	local now = os.clock()
-	for player, _ in carrying do
-		local _, humanoid, root = parts(player)
-		local prev = lastGood[player]
-		if root and humanoid and prev then
-			local dt = now - prev.t
-			local launched = (player:GetAttribute("LaunchedAt") :: number?) or 0
-			local exempt = workspace:GetServerTimeNow() - launched < 3
-			local flat = Vector3.new(root.Position.X - prev.pos.X, 0, root.Position.Z - prev.pos.Z).Magnitude
-			if not exempt and Formulas.speedSuspicious(flat, dt, humanoid.WalkSpeed) then
-				CarryService.forceDrop(player, "speed", prev.pos)
-				root.CFrame = CFrame.new(prev.pos) * root.CFrame.Rotation
-			else
-				lastGood[player] = { pos = root.Position, t = now }
-			end
-		end
+local function checkCarrier(player: Player, c: Carry, now: number)
+	local _, humanoid, root = parts(player)
+	if not root or not humanoid or humanoid.Health <= 0 then
+		CarryService.forceDrop(player, "lost")
+	elseif movedLegally(player, root, humanoid, now) and BaseService.isInOwnBase(player, root.Position) then
+		deliver(player, c)
 	end
 end
 
@@ -223,7 +232,7 @@ function CarryService.start()
 	for _, p in Players:GetPlayers() do
 		onPlayer(p)
 	end
-	PlayerData.loaded.Event:Connect(function(player)
+	PlayerData.onLoaded(function(player)
 		CarryService.applySpeed(player)
 	end)
 	Players.PlayerRemoving:Connect(function(player)
@@ -233,16 +242,13 @@ function CarryService.start()
 		lastGood[player] = nil
 	end)
 	task.spawn(function()
-		local sinceCheck = 0
 		while true do
-			local dt = task.wait(0.2)
-			pcall(deliverAndCheck)
-			sinceCheck += dt
-			if sinceCheck >= Config.Carry.SpeedCheckInterval then
-				sinceCheck = 0
-				local ok, err = pcall(speedCheck)
+			task.wait(0.2)
+			local now = os.clock()
+			for player, c in carrying do
+				local ok, err = pcall(checkCarrier, player, c, now)
 				if not ok then
-					warn("[Carry] speed check failed: " .. tostring(err))
+					warn(`[Carry] check for {player.Name} failed: {err}`)
 				end
 			end
 		end

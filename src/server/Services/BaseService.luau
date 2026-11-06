@@ -412,7 +412,7 @@ function BaseService.start()
 			BaseService.refresh(player)
 		end
 	end)
-	PlayerData.loaded.Event:Connect(assign)
+	PlayerData.onLoaded(assign)
 	for _, player in Players:GetPlayers() do
 		local save = PlayerData.get(player)
 		if save then

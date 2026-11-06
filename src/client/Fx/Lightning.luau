@@ -89,8 +89,11 @@ function Lightning.strike(position: Vector3, scale: number, color: Color3)
 		Debris:AddItem(folder, 0.5)
 	end)
 	thunderstrike(position)
-	local k = FxUtil.closeness(position, 260)
-	CameraFx.skyFlash(0.35 + 0.65 * k, 0.35)
+	local k = FxUtil.closeness(position, Config.Fx.MaxDistance)
+	if k <= 0 then
+		return
+	end
+	CameraFx.skyFlash(0.2 + 0.8 * k, 0.35)
 	FxUtil.soundAt(Config.Fx.Sounds.Crack, position, { PlaybackSpeed = FxUtil.rand({ 0.92, 1.05 }) })
 	if k > 0.25 then
 		local close = Config.Fx.Sounds.Close

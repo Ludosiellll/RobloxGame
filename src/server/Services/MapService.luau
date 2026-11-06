@@ -62,7 +62,7 @@ function MapService.findSpawnPoint(zone: number, rng: Random, avoid: { Vector3 }
 		end)
 		local top = Layout.heightAt(math.sqrt(x * x + z * z)) + M.SpawnRayHeight
 		local hit = workspace:Raycast(Vector3.new(x, top, z), Vector3.new(0, -M.SpawnRayHeight * 2, 0), params)
-		if hit and Formulas.isSpawnHitAllowed(hit.Instance.Name) and hit.Material ~= Enum.Material.CrackedLava and hit.Material ~= Enum.Material.Water and Layout.zoneAt(hit.Position.X, hit.Position.Z) == zone then
+		if hit and Formulas.isSpawnHitAllowed(hit.Instance.Name) and hit.Material ~= Enum.Material.CrackedLava and hit.Material ~= Enum.Material.Water and Layout.zoneAt(hit.Position.X, hit.Position.Z) == zone and Formulas.spawnSurfaceOk(hit.Position.Y, top - M.SpawnRayHeight, hit.Normal.Y) then
 			local ok = true
 			for _, p in avoid or {} do
 				if (p - hit.Position).Magnitude < M.MinSpacing then

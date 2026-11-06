@@ -114,6 +114,29 @@ function Formulas.speedSuspicious(distance: number, dt: number, walkSpeed: numbe
 	return distance > walkSpeed * Config.Carry.SpeedTolerance * dt + Config.Carry.SpeedSlack
 end
 
+-- Законное ли перемещение на distance за dt (по горизонтали). sinceLaunch — секунд с касания гейзера:
+-- в его окне предел — скорость полёта, но телепорт всё равно не пройдёт.
+function Formulas.moveAllowed(distance: number, dt: number, walkSpeed: number, sinceLaunch: number): boolean
+	local C = Config.Carry
+	local speed = if sinceLaunch < C.GeyserWindow then math.max(walkSpeed, C.GeyserSpeed) else walkSpeed
+	return distance <= speed * C.SpeedTolerance * dt + C.SpeedSlack
+end
+
+-- Насколько подробно показывать падение метеорита на таком расстоянии от камеры.
+function Formulas.fxLevel(distance: number): "full" | "column" | "none"
+	if distance <= Config.Fx.MaxDistance then
+		return "full"
+	elseif distance <= Config.Fx.ColumnDistance then
+		return "column"
+	end
+	return "none"
+end
+
+-- Точка падения на земле кратера, а не на дереве или крыше: близко к высоте профиля и не круто.
+function Formulas.spawnSurfaceOk(hitY: number, expectedY: number, normalY: number): boolean
+	return math.abs(hitY - expectedY) <= 8 and normalY >= 0.7
+end
+
 function Formulas.dropDespawnAt(now: number): number
 	return now + Config.Meteor.DespawnDropped
 end

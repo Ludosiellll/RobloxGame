@@ -29,9 +29,10 @@ return {
 	Carry = {
 		StrengthPerLevel = 0.025,
 		StrengthMaxLevel = 20,
-		SpeedCheckInterval = 0.5,
 		SpeedTolerance = 1.5,
 		SpeedSlack = 5,
+		GeyserSpeed = 120, -- предел горизонтальной скорости в полёте с гейзера, studs/s
+		GeyserWindow = 3, -- сколько секунд после гейзера действует этот предел
 	},
 
 	Push = {
@@ -102,6 +103,8 @@ return {
 
 	-- Эффекты падения и раскрытия (клиент). Звуки: { id, громкость, скорость }.
 	Fx = {
+		MaxDistance = 550, -- дальше этого — без шара, взрыва и воронки
+		ColumnDistance = 1200, -- дальше этого — совсем ничего, ближе — только столб света
 		FlightDistance = 220, -- откуда прилетает огненный шар
 		FlightDir = { -0.45, 1, 0.25 },
 		Shake = { MaxDistance = 120, Strength = 1.6, Duration = 0.5 },

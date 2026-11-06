@@ -142,6 +142,8 @@ function CreatureFactory.build(creatureId: string, mutation: string?): Model
 	if src then
 		AnimLibrary.ensure(creatureId)
 	end
+	-- модель приходит к клиенту целиком: иначе кости могут догрузиться позже или смениться при стриминге
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	CollectionService:AddTag(model, "Creature")
 	return model
 end

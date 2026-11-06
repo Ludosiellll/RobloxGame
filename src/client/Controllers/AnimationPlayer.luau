@@ -64,14 +64,8 @@ local function clipFor(id: string): any
 	return nil
 end
 
-local function track(model: Instance)
-	if not model:IsA("Model") or entries[model] then
-		return
-	end
-	local id = model:GetAttribute("CreatureId")
-	if type(id) ~= "string" then
-		return
-	end
+-- Кости и детали модели (заново — если после стриминга старые экземпляры пропали).
+local function scan(model: Model): ({ [string]: Bone }, { BasePart })
 	local bones: { [string]: Bone } = {}
 	local parts: { BasePart } = {}
 	for _, d in model:GetDescendants() do
@@ -81,6 +75,26 @@ local function track(model: Instance)
 			table.insert(parts, d)
 		end
 	end
+	return bones, parts
+end
+
+local function stale(e: any): boolean
+	local _, bone = next(e.bones)
+	if bone then
+		return bone.Parent == nil
+	end
+	return #e.parts == 0 or e.parts[1].Parent == nil
+end
+
+local function track(model: Instance)
+	if not model:IsA("Model") or entries[model] then
+		return
+	end
+	local id = model:GetAttribute("CreatureId")
+	if type(id) ~= "string" then
+		return
+	end
+	local bones, parts = scan(model)
 	entries[model] = {
 		model = model,
 		id = id,
@@ -162,6 +176,9 @@ local function step()
 	local now = os.clock()
 	for i = 1, math.min(#near, Config.Anim.MaxAnimated) do
 		local e = near[i].e
+		if stale(e) or (not next(e.bones) and now - e.since < 5) then
+			e.bones, e.parts = scan(e.model)
+		end
 		local clip = if next(e.bones) then clipFor(e.id) else nil
 		if clip then
 			animate(e, clip, now)

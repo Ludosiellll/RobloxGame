@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config") :: ModuleScript) :: any
 local Rarity = require(Shared:WaitForChild("Rarity") :: ModuleScript) :: any
+local Formulas = require(Shared:WaitForChild("Formulas") :: ModuleScript) :: any
 
 local FxUtil = require(script.Parent:WaitForChild("FxUtil") :: ModuleScript) :: any
 local CameraFx = require(script.Parent:WaitForChild("CameraFx") :: ModuleScript) :: any
@@ -27,10 +28,19 @@ local function packPart(name: string): BasePart?
 	return if p and p:IsA("BasePart") then p else nil
 end
 
-local function telegraph(position: Vector3, time: number, color: Color3, scale: number)
+local function telegraph(position: Vector3, time: number, color: Color3, scale: number, columnOnly: boolean)
 	local hit = FxUtil.findGround(position)
 	local frame = if hit then FxUtil.surfaceFrame(hit.Position, hit.Normal) else CFrame.new(position) * CFrame.Angles(0, 0, math.rad(90))
 	local radius = 7 * scale
+	if columnOnly then
+		local height = 160
+		local column = FxUtil.part({ Material = Enum.Material.Neon, Color = color, Transparency = 1, Size = Vector3.new(2 * scale, height, 2 * scale), CFrame = CFrame.new(position + Vector3.new(0, height / 2, 0)) })
+		FxUtil.tween(column, time, { Transparency = 0.7 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		task.delay(time + 0.2, function()
+			column:Destroy()
+		end)
+		return
+	end
 	local disc = FxUtil.part({ Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = color, Transparency = 0.85, Size = Vector3.new(0.08, 2, 2), CFrame = frame * CFrame.new(0.04, 0, 0) })
 	local ring = FxUtil.part({ Shape = Enum.PartType.Cylinder, Material = Enum.Material.Neon, Color = color, Transparency = 0.3, Size = Vector3.new(0.12, radius * 2, radius * 2), CFrame = frame * CFrame.new(0.06, 0, 0) })
 	FxUtil.tween(disc, time, { Size = Vector3.new(0.08, radius * 2, radius * 2), Transparency = 0.55 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
@@ -181,10 +191,18 @@ local function impact(info: Info, color: Color3, scale: number)
 end
 
 function MeteorFall.play(info: Info)
+	local cam = workspace.CurrentCamera
+	local level = Formulas.fxLevel(if cam then (cam.CFrame.Position - info.position).Magnitude else math.huge)
+	if level == "none" then
+		return
+	end
 	local color = FxUtil.rarityColor(info.rarity)
 	local scale = FxUtil.rarityScale(info.rarity)
 	local untilImpact = math.max(info.impactAt - workspace:GetServerTimeNow(), 0.1)
-	telegraph(info.position, untilImpact, color, scale)
+	telegraph(info.position, untilImpact, color, scale, level == "column")
+	if level == "column" then
+		return
+	end
 	local flight = math.min(Config.Meteor.FallTime, untilImpact)
 	task.delay(untilImpact - flight, function()
 		local ok, err = pcall(fly, info.position, flight, color, scale)

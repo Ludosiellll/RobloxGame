@@ -24,7 +24,13 @@ type Session = {
 
 local PlayerData = {}
 
-PlayerData.loaded = Instance.new("BindableEvent") -- Fire(player, save)
+local loadedHandlers: { (Player, any) -> () } = {}
+
+-- Вызвать fn(player, save) после загрузки данных. save — настоящая таблица сохранения
+-- (BindableEvent передавал бы копию, и изменения терялись бы).
+function PlayerData.onLoaded(fn: (Player, any) -> ())
+	table.insert(loadedHandlers, fn)
+end
 
 local store: DataStore? = nil
 local memoryMode = false
@@ -130,7 +136,12 @@ local function loadPlayer(player: Player)
 	session.save = save
 	session.loaded = true
 	session.canSave = not memoryMode
-	PlayerData.loaded:Fire(player, save)
+	for _, fn in loadedHandlers do
+		local ok, err = pcall(fn, player, save)
+		if not ok then
+			warn(`[PlayerData] load handler failed for {player.Name}: {err}`)
+		end
+	end
 end
 
 -- Запись с проверкой, что блокировка всё ещё наша. release — снять блокировку (выход).
