@@ -19,6 +19,7 @@ end
 
 start("Gates")
 start("Geysers")
+start("AnimationPlayer")
 start("DebugPanel")
 
 print(`[Client] Meteor Rain {Config.Version} started`)

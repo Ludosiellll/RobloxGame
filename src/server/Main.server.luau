@@ -25,5 +25,7 @@ start("AssetCheck")
 start("PlayerData")
 start("DebugService")
 start("MapService")
+start("AnimLibrary")
+start("CreatureFactory")
 
 print(`[Server] Meteor Rain {Config.Version} started`)
