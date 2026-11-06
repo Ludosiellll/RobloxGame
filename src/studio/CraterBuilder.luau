@@ -357,8 +357,13 @@ function CraterBuilder.build(): { [string]: any }
 	buildEdges(folder("Edges", root))
 	StarterPlayer.CharacterMaxSlopeAngle = C.MaxSlopeAngle
 	if source and source.Parent == workspace then
-		source.Name = "BiomeSource"
-		source.Parent = ServerStorage
+		if ServerStorage:FindFirstChild("BiomeSource") then
+			-- биомы уже есть в ServerStorage (их кладёт Rojo): копия из Workspace больше не нужна
+			source:Destroy()
+		else
+			source.Name = "BiomeSource"
+			source.Parent = ServerStorage
+		end
 	end
 	stats.seconds = math.floor((os.clock() - started) * 10) / 10
 	print(string.format("[Crater] done: %d decor parts, %.1f s. Save or publish the place now.", stats.parts, stats.seconds))
