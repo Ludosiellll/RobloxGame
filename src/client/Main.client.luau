@@ -18,6 +18,7 @@ local function start(name: string)
 end
 
 start("Hud")
+start("Menus")
 start("Gates")
 start("Geysers")
 start("AnimationPlayer")
