@@ -1,7 +1,7 @@
-* text=auto
-*.cmd text eol=crlf
-*.bat text eol=crlf
-*.luau text eol=lf
-*.json text eol=lf
-*.toml text eol=lf
-*.md text eol=lf
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.mp3 binary
+*.ogg binary
+*.zip binary

@@ -1,55 +1,36 @@
-# RobloxGame
+# Игры для Яндекс Игр
 
-Код игры для Roblox. Скрипты лежат здесь, а в Roblox Studio их переносит [Rojo](https://rojo.space).
+HTML5-игры для каталога [Яндекс Игры](https://yandex.ru/games/). Код пишет Claude, игры работают в браузере на телефоне и компьютере.
 
-Заметки, правила и решения по проекту лежат в отдельном репозитории [RobloxGameNotes](https://github.com/Ludosiellll/RobloxGameNotes).
+Roblox-версия «Метеоритный дождь» закрыта 2026-11-21. Её код остался в истории git и в ветке `roblox-archive`.
 
-## Как работать
+## Что от тебя нужно
 
-1. Запусти `start.cmd` двойным щелчком. Он скачает свежий код из GitHub и запустит Rojo. Окно не закрывай.
-2. Открой плейс в Roblox Studio. На вкладке **Plugins** нажми **Rojo**, затем **Connect**. Если Rojo покажет список изменений, нажми **Accept**.
-3. Когда в GitHub появились новые изменения, запусти `update.cmd`. Пока Rojo подключён, скрипты в Studio обновятся сами.
-4. Нажми **Play** и смотри окно **Output** (View → Output). Ошибки оттуда отправляй Claude.
+Ничего ставить не нужно: всё собирается и проверяется в облаке.
 
-Первая настройка компьютера описана в [docs/SETUP_PC.md](docs/SETUP_PC.md).
+1. Claude присылает в чат архив игры (`<id>.zip`) и скриншоты.
+2. Ты загружаешь архив в [консоль Яндекс Игр](https://games.yandex.ru/console) по [docs/PUBLISH.md](docs/PUBLISH.md) и отправляешь на модерацию.
+3. После публикации присылаешь Claude цифры из консоли (игроки, время в игре, доход), он улучшает игру.
 
-Чтобы ИИ-агент на ПК сам запускал Play и смотрел скриншоты, подключи Studio MCP по [docs/STUDIO_MCP.md](docs/STUDIO_MCP.md).
+## Устройство
 
-## Этап 1: как проверить
+- `shared/` — общий код для всех игр:
+  - `platform/` — работа с SDK Яндекс Игр: реклама, сохранения, покупки, лидерборды, пауза, язык;
+  - `boot.ts`, `i18n.ts`, `canvas.ts`.
+- `games/<id>/` — отдельные игры. `games/_template/` — шаблон для новой игры, в каталог не публикуется.
+- `tests/` — тесты (Vitest).
+- `scripts/` — сборка архива, локальный запуск, скриншоты, новая игра.
+- `docs/PUBLISH.md` — публикация и требования модерации.
 
-1. Один раз подготовь плейс по [docs/ASSET_SETUP.md](docs/ASSET_SETUP.md): кратер, эффекты из паков, настройки игры.
-2. Пройди [docs/CHECKLIST_STAGE1.md](docs/CHECKLIST_STAGE1.md). Отладочные команды доступны в Studio по кнопке DEBUG.
-3. Анимации игрока (нести, толкнуть, празднование) публикуются один раз по [docs/ANIMATIONS.md](docs/ANIMATIONS.md).
+## Команды
 
-## Этап 2: как проверить
+```bash
+npm install
+npm run check                   # типы и тесты
+npm run build -- <id>           # dist/<id> и release/<id>.zip с проверкой требований к архиву
+npm run shots -- <id>           # скриншоты компьютер/телефон в shots/<id>, ошибки консоли
+npm run dev -- <id>             # локальный запуск на http://localhost:5173
+npm run new-game -- <id>        # новая игра из шаблона
+```
 
-Окна Folk Stud (Shop, Index, Rebirth, Settings), продажа, перерождение, лидерборды и профиль игрока — проверки в [docs/CHECKLIST_STAGE2.md](docs/CHECKLIST_STAGE2.md).
-
-## Этап 3: как проверить
-
-Яйца, питомцы и беговые дорожки — проверки в [docs/CHECKLIST_STAGE3.md](docs/CHECKLIST_STAGE3.md). Паки питомцев и дорожек один раз кладутся вручную (шаг 3а в [docs/ASSET_SETUP.md](docs/ASSET_SETUP.md)).
-
-## Что Rojo трогает, а что нет
-
-Rojo управляет только этими папками (полный список в `default.project.json`):
-
-| Папка в Studio | Папка в репозитории | Что там |
-| --- | --- | --- |
-| `ReplicatedStorage.Shared` | `src/shared` | модули для сервера и клиента |
-| `ServerScriptService.Server` | `src/server` | серверные скрипты |
-| `StarterPlayer.StarterPlayerScripts.Client` | `src/client` | клиентские скрипты |
-| `ReplicatedStorage.VFX` | `assets/vfx` | эффекты из паков без скриптов |
-| `ServerScriptService.Tests` | `tests` | тесты, запускаются при Play |
-| `ServerStorage.Packs` | `assets/packs` | модели брейнротов |
-| `ServerStorage.StudioTools` | `src/studio` | генератор кратера, подготовка анимаций |
-
-- `ReplicatedStorage.Packs` (FireballVFX, WeatherVFX) Rojo не трогает, его кладёшь вручную по ASSET_SETUP.
-- Скрипты внутри этих папок правятся только здесь, в репозитории. Правка прямо в Studio пропадёт при следующей синхронизации.
-- Если создать что-то в этих папках вручную в Studio, Rojo это удалит.
-- Всё остальное (карта в `Workspace`, освещение, интерфейс в других местах) Rojo не трогает. Это можно строить в Studio руками и сохранять через **File → Publish to Roblox**.
-
-## Имена файлов
-
-- `Имя.server.luau` — серверный скрипт (Script)
-- `Имя.client.luau` — клиентский скрипт (LocalScript)
-- `Имя.luau` — модуль (ModuleScript)
+Вне Яндекс Игр (локально, на скриншотах) вместо SDK работает заглушка: реклама показывается плашкой, сохранения идут в localStorage. Язык можно выбрать параметром `?lang=ru|en|tr`.
