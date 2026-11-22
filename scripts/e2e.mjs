@@ -34,6 +34,8 @@ await page.waitForTimeout(2500)
 
 // 1. выбор щелчком
 let sofa = await item('loungeSofa')
+// площадь квартиры в заголовке панели: 5,4×4,4 + 3,6×3,2 + 3,6×1,8 = 41,76 м²
+check('в панели сцены показана площадь квартиры', (await page.textContent('.insp-head .sub')).includes('41,8'), await page.textContent('.insp-head .sub'))
 let p = await screenOf(sofa.x, 0.5, sofa.z)
 await page.mouse.click(p.x, p.y)
 let s = await state()

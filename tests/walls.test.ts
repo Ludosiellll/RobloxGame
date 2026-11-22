@@ -1,6 +1,6 @@
 import { LIMITS } from '../src/core/doc'
 import { describe, expect, it } from 'vitest'
-import { buildWalls, roomAt, snapOpening, wallLowered, type Rect, roomFromDrag } from '../src/core/walls'
+import { buildWalls, floorArea, roomAt, snapOpening, wallLowered, type Rect, roomFromDrag } from '../src/core/walls'
 
 // прямоугольник по углам для наглядности тестов
 const rect = (id: string, x0: number, z0: number, x1: number, z1: number): Rect => ({ id, x: (x0 + x1) / 2, z: (z0 + z1) / 2, w: x1 - x0, d: z1 - z0 })
@@ -111,6 +111,24 @@ describe('snapOpening', () => {
       // соседняя комната занимает x от -2,5 до 2,5 и z от -2 до 2
       const r = roomFromDrag({ x: 2.58, z: -1.93 }, { x: 6, z: 2.11 }, [other])
       expect(r).toEqual({ x: 4.25, z: 0, w: 3.5, d: 4, ok: true })
+    })
+  })
+
+  describe('площадь', () => {
+    it('одна комната — ширина на глубину', () => {
+      expect(floorArea([rect('a', 0, 0, 4, 3)])).toBeCloseTo(12)
+    })
+
+    it('комнаты рядом складываются', () => {
+      expect(floorArea([rect('a', 0, 0, 4, 3), rect('b', 4, 0, 6, 3)])).toBeCloseTo(18)
+    })
+
+    it('общая часть перекрывающихся комнат считается один раз', () => {
+      expect(floorArea([rect('a', 0, 0, 4, 3), rect('b', 2, 1, 6, 4)])).toBeCloseTo(12 + 12 - 4)
+    })
+
+    it('без комнат площадь ноль', () => {
+      expect(floorArea([])).toBe(0)
     })
   })
 })

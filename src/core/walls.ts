@@ -183,3 +183,19 @@ export function roomFromDrag(a: { x: number; z: number }, b: { x: number; z: num
   const depth = r3(Math.abs(bz - az))
   return { x: r3((ax + bx) / 2), z: r3((az + bz) / 2), w: width, d: depth, ok: width >= LIMITS.roomMin && depth >= LIMITS.roomMin }
 }
+
+/** Площадь пола всех комнат, м². Общая часть перекрывающихся комнат считается один раз. */
+export function floorArea(rooms: Rect[]): number {
+  // режем плоскость по всем краям комнат и складываем клетки, попавшие хотя бы в одну комнату
+  const xs = [...new Set(rooms.flatMap((r) => [r.x - r.w / 2, r.x + r.w / 2]))].sort((a, b) => a - b)
+  const zs = [...new Set(rooms.flatMap((r) => [r.z - r.d / 2, r.z + r.d / 2]))].sort((a, b) => a - b)
+  let area = 0
+  for (let i = 0; i < xs.length - 1; i++) {
+    for (let j = 0; j < zs.length - 1; j++) {
+      const cx = (xs[i] + xs[i + 1]) / 2
+      const cz = (zs[j] + zs[j + 1]) / 2
+      if (rooms.some((r) => Math.abs(cx - r.x) < r.w / 2 && Math.abs(cz - r.z) < r.d / 2)) area += (xs[i + 1] - xs[i]) * (zs[j + 1] - zs[j])
+    }
+  }
+  return area
+}

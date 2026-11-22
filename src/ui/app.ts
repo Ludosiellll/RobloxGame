@@ -10,7 +10,7 @@ import { isOrphan } from '../core/orphans'
 import { projectFileName } from '../core/projectFile'
 import { starterDoc } from '../core/starter'
 import { calibrate, defaultUnderlay, underlaySize } from '../core/underlay'
-import { roomAt, snapOpening } from '../core/walls'
+import { floorArea, roomAt, snapOpening } from '../core/walls'
 import { prepareImage, type ImageStore } from '../images'
 import { saveFile } from '../platform'
 import { packProject, readProject, type OpenedProject } from '../projectFile'
@@ -478,12 +478,15 @@ export class Ui {
     return btn
   }
 
-  private head(title: string, sub?: string): HTMLElement {
+  /** Заголовок панели. live — подзаголовок, который пересчитывается при каждой правке (площадь). */
+  private head(title: string, sub?: string, live?: (d: Doc) => string): HTMLElement {
     const { store } = this.d
+    const subEl = sub || live ? h('div', { class: 'sub' }, sub ?? '') : null
+    if (subEl && live) this.controls.push({ el: subEl, sync: (d) => { subEl.textContent = live(d) } })
     return h(
       'header',
       { class: 'insp-head', onclick: () => { if (!store.selection) { this.sceneOpen = !this.sceneOpen; this.renderInspector() } } },
-      h('div', {}, h('h2', {}, title), sub ? h('div', { class: 'sub' }, sub) : null),
+      h('div', {}, h('h2', {}, title), subEl),
       store.selection ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': this.t('cancel'), html: ICON.close, onclick: () => store.select(null) }) : null,
     )
   }
@@ -535,7 +538,7 @@ export class Ui {
 
     void interact
     return [
-      this.head(this.t('scene')),
+      this.head(this.t('scene'), undefined, (d) => `${this.t('areaTotal')} ${fmt(lang, floorArea(d.rooms), 1)} ${this.t('m2')}`),
       this.section(this.t('light'),
         this.slider({ id: 'f-time', label: this.t('timeOfDay'), min: 0, max: 1, step: 0.01, get: (d) => d.light.time, set: (v) => store.update((d) => setLight(d, v), true), show: (v) => this.t(v < 0.3 ? 'morning' : v < 0.72 ? 'noon' : 'evening') }),
       ),
@@ -704,7 +707,7 @@ export class Ui {
           if (d.items.some((i) => roomAt(d.rooms, i.x, i.z)?.id === id)) { this.furnishAsk = { room: id, kind }; this.renderInspector() } else this.furnish(id, kind, false)
         } }, this.t(key))))
     return [
-      this.head(`${this.t('room')} ${index + 1}`),
+      this.head(`${this.t('room')} ${index + 1}`, undefined, (d) => { const r = cur(d); return r ? `${fmt(lang, r.w * r.d, 1)} ${this.t('m2')}` : '' }),
       this.section(this.t('furnish'), furnishUi),
       this.section(this.t('size'),
         this.slider({ id: 'f-rw', label: this.t('width'), min: LIMITS.roomMin, max: 10, step: 0.05, get: (d) => { const r = cur(d); return r ? Math.min(10, r.w) : null }, set: (v) => store.update((d) => updateRoom(d, id, { w: v }), true), show: m }),
