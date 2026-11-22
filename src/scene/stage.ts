@@ -207,9 +207,43 @@ export class Stage {
     this.viewListeners.push(fn)
   }
 
+  /** один палец управляет камерой; false — пока им рисуют комнату */
+  private fingerCamera = true
+
+  /** Левая кнопка мыши и один палец: в объёмном виде поворачивают вид, в виде сверху — сдвигают. */
+  private applyGestures(): void {
+    const plan = this.view === 'plan'
+    this.controls.mouseButtons.LEFT = plan ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE
+    this.controls.touches.ONE = !this.fingerCamera ? null : plan ? THREE.TOUCH.PAN : THREE.TOUCH.ROTATE
+  }
+
+  setFingerCamera(on: boolean): void {
+    this.fingerCamera = on
+    this.applyGestures()
+  }
+
+  /**
+   * Высота вида изменилась в k раз (на телефоне под ним открылась или закрылась панель):
+   * камера придвигается во столько же раз, и предметы остаются на экране того же размера.
+   */
+  keepScale(k: number): void {
+    if (!Number.isFinite(k) || k <= 0 || k === 1) return
+    const fit = (r: number): number => THREE.MathUtils.clamp(r * k, this.controls.minDistance, this.controls.maxDistance)
+    if (this.tween) {
+      this.tween.to.radius = fit(this.tween.to.radius)
+      return
+    }
+    const off = this.camera.position.clone().sub(this.controls.target)
+    off.setLength(fit(off.length()))
+    this.camera.position.copy(this.controls.target).add(off)
+    this.controls.update()
+    this.invalidate()
+  }
+
   setView(view: ViewMode, immediate = false): void {
     const changed = view !== this.view
     this.view = view
+    this.applyGestures()
     if (changed) for (const fn of this.viewListeners) fn(view)
     const box = this.fitBox.isEmpty() ? this.bounds : this.fitBox
     const center = box.getCenter(new THREE.Vector3())

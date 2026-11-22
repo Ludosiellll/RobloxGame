@@ -201,7 +201,7 @@ h1, h2, p { margin: 0; }
 
 /* ---------- обучение ---------- */
 .tour { position: absolute; inset: 0; z-index: 50; pointer-events: none; }
-.tour-panel { position: absolute; left: calc(var(--cat-w) + 12px); bottom: 36px; width: 312px; max-width: calc(100% - 24px); pointer-events: auto; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2); overflow: hidden; }
+.tour-panel { position: absolute; left: calc(var(--cat-w) + 10px); top: 120px; width: 312px; max-width: calc(100% - 24px); pointer-events: auto; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2); overflow: hidden; }
 .tour-head { display: flex; align-items: center; justify-content: space-between; padding: 5px 5px 5px 12px; background: var(--bg); border-bottom: 1px solid var(--line); font-size: 12px; color: var(--text-2); }
 .tour-progress { height: 3px; background: var(--line); }
 .tour-progress i { display: block; height: 100%; background: var(--accent); transition: width 0.3s ease; }
@@ -229,9 +229,14 @@ h1, h2, p { margin: 0; }
 .status-stats { font-variant-numeric: tabular-nums; flex: none; }
 
 /* ---------- узкий экран: одна панель под видом ---------- */
-@media (max-width: 760px) {
-  .tour-panel { left: 8px; right: 8px; top: 78px; bottom: auto; width: auto; max-width: none; }
+@media (max-width: 1180px) {
+  :root { --cat-w: 212px; --insp-w: 260px; }
+}
+@media (max-width: 900px) {
+  .tour-panel { width: min(360px, calc(100% - 16px)); max-width: none; }
   .tour-clip { display: none; }
+  .tour-body { padding: 8px 12px 2px; }
+  .tour-foot { padding: 6px 12px 8px; }
   #app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto auto; grid-template-areas: 'menu' 'tool' 'view' 'panel' 'dock'; }
   .catalog, .inspector { grid-area: panel; display: none; max-height: 42dvh; border: 0; border-top: 1px solid var(--line); }
   .catalog.is-open, .inspector.is-open { display: flex; }

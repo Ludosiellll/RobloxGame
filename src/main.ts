@@ -116,6 +116,7 @@ async function start(): Promise<void> {
       interact.stopDrawing()
       interact.stopCalibration()
     },
+    closePicker: () => ui.closePicker(),
   })
   document.getElementById('app')!.append(tour.el)
   ui.onTour = () => tour.welcome()

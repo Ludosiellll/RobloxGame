@@ -48,9 +48,12 @@ export class Interact {
   private drawOn = false
   /** пальцы, которые сейчас касаются сцены: второй палец — это жест камеры, а не рисование */
   private readonly fingers = new Set<number>()
-  private touchOne: THREE.TOUCH | null | undefined
   /** вызывается, когда рисование комнат включается или выключается */
   onDrawing: () => void = () => {}
+  /** указатели, нажатые на сцене (или несущие вещь из каталога): пока они есть, идёт жест */
+  private readonly held = new Set<number>()
+  /** вызывается, когда последний палец или кнопка мыши отпущены: окну можно менять раскладку */
+  onRelease: () => void = () => {}
 
   constructor(
     private readonly stage: Stage,
@@ -94,12 +97,17 @@ export class Interact {
     const el = stage.renderer.domElement
     el.addEventListener('pointerdown', (e) => this.onDown(e), { capture: true })
     window.addEventListener('pointermove', (e) => this.onMove(e))
-    window.addEventListener('pointerup', (e) => this.onUp(e))
-    window.addEventListener('pointercancel', (e) => this.onUp(e, true))
+    window.addEventListener('pointerup', (e) => this.onPointerEnd(e))
+    window.addEventListener('pointercancel', (e) => this.onPointerEnd(e, true))
     window.addEventListener('keydown', (e) => this.onKey(e))
     el.addEventListener('contextmenu', (e) => e.preventDefault())
     stage.onFrame(() => this.refreshOverlay())
-    store.on(() => {
+    store.on((c) => {
+      // открыт другой проект: режимы рисования и разметки к нему уже не относятся
+      if (c === 'replace') {
+        this.stopDrawing()
+        this.stopCalibration()
+      }
       if (this.calib && this.store.selection?.kind !== 'underlay') this.stopCalibration()
       if (this.drawOn && this.store.selection) this.stopDrawing()
       this.rebuildOutline()
@@ -120,7 +128,26 @@ export class Interact {
     return this.stage.pointOnPlane(e.clientX, e.clientY, y)
   }
 
+  /** Идёт жест: палец или кнопка мыши ещё не отпущены. Раскладку окна в это время менять нельзя — точка под пальцем уедет. */
+  get pressed(): boolean {
+    return this.held.size > 0
+  }
+
+  /** Указатель над сценой, а не над панелями вокруг неё. */
+  overView(e: { clientX: number; clientY: number }): boolean {
+    const r = this.stage.renderer.domElement.getBoundingClientRect()
+    return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+  }
+
+  private onPointerEnd(e: PointerEvent, cancelled = false): void {
+    const was = this.held.size > 0
+    this.onUp(e, cancelled)
+    this.held.delete(e.pointerId)
+    if (was && this.held.size === 0) this.onRelease()
+  }
+
   private onDown(e: PointerEvent): void {
+    this.held.add(e.pointerId)
     if (e.button !== 0 && e.pointerType === 'mouse') return
     this.down = { x: e.clientX, y: e.clientY }
     if (e.pointerType === 'touch') this.fingers.add(e.pointerId)
@@ -237,6 +264,12 @@ export class Interact {
         }
         return this.finishDraw(d)
       }
+      if (d.kind === 'item' && d.fresh && (cancelled || !this.overView(e))) {
+        // вещь из каталога отпустили мимо сцены: её как не было
+        this.store.cancel()
+        this.down = null
+        return
+      }
       if (d.moved || (d.kind === 'item' && d.fresh)) this.store.commit()
       this.down = null
       // по плану щёлкнули, а не потащили его: выбрать то, что под указателем
@@ -283,8 +316,7 @@ export class Interact {
     this.drawOn = true
     this.stage.renderer.domElement.style.cursor = 'crosshair'
     // один палец рисует, поэтому камера на него не отзывается; два пальца по-прежнему приближают и сдвигают
-    this.touchOne = this.stage.controls.touches.ONE
-    this.stage.controls.touches.ONE = null
+    this.stage.setFingerCamera(false)
     this.onDrawing()
   }
 
@@ -293,7 +325,7 @@ export class Interact {
     this.drawOn = false
     this.dropDraw()
     this.stage.renderer.domElement.style.cursor = ''
-    this.stage.controls.touches.ONE = this.touchOne
+    this.stage.setFingerCamera(true)
     this.onDrawing()
   }
 
@@ -495,20 +527,20 @@ export class Interact {
     return { x: t.x, z: t.z }
   }
 
-  /** Добавить предмет в центр вида. Возвращает id. */
-  addItem(src: ItemSrc, at?: { x: number; z: number }): string {
+  /** Добавить предмет в центр вида. Возвращает id. dragging — вещь несут из каталога: шаг истории закроется, когда её отпустят. */
+  addItem(src: ItemSrc, at?: { x: number; z: number }, dragging = false): string {
     const id = this.store.newId('i')
     const c = at ?? this.viewCenter()
-    this.store.update((doc) => addItem(doc, src, id, { x: snap(c.x, STEP), z: snap(c.z, STEP) }))
+    this.store.update((doc) => addItem(doc, src, id, { x: snap(c.x, STEP), z: snap(c.z, STEP) }), dragging)
     this.store.select({ kind: 'item', id })
-    // когда модель загрузится и станет известен размер — вписать в комнату
+    // когда модель загрузится и станет известен размер — вписать в комнату.
+    // Это поправка к тому же добавлению, а не отдельный шаг: «Отменить» убирает вещь с одного раза
     const fit = () => {
       const doc = this.store.doc
       const item = doc.items.find((i) => i.id === id)
-      if (!item) return
+      if (!item || (this.drag?.kind === 'item' && this.drag.id === id)) return
       const pos = this.settle(doc, id, item.x, item.z, false)
-      if (pos.x !== item.x || pos.z !== item.z) this.store.update((d) => updateItem(d, id, pos), true)
-      this.store.commit()
+      if (pos.x !== item.x || pos.z !== item.z) this.store.amend((d) => updateItem(d, id, pos))
     }
     if (this.items.size(id)) fit()
     else {
@@ -527,7 +559,8 @@ export class Interact {
   /** Начать перетаскивание нового предмета из каталога. */
   startPlaceDrag(src: ItemSrc, e: PointerEvent): void {
     const p = this.floorPoint(e)
-    const id = this.addItem(src, p ? { x: p.x, z: p.z } : undefined)
+    const id = this.addItem(src, p ? { x: p.x, z: p.z } : undefined, true)
+    this.held.add(e.pointerId)
     this.drag = { kind: 'item', id, ox: 0, oz: 0, moved: true, fresh: true }
     this.down = { x: e.clientX, y: e.clientY }
     this.stage.controls.enabled = false
@@ -575,7 +608,13 @@ export class Interact {
 
   private onKey(e: KeyboardEvent): void {
     const t = e.target as HTMLElement | null
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return
+    if (t) {
+      // в полях с текстом клавиши принадлежат полю; ползунок, флажок и выбор цвета забирают только свои стрелки
+      const kind = t.tagName === 'INPUT' ? (t as HTMLInputElement).type : ''
+      const plain = kind === 'range' || kind === 'checkbox' || kind === 'radio' || kind === 'color' || kind === 'button'
+      if (t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable || (t.tagName === 'INPUT' && !plain)) return
+      if (kind === 'range' && /^(Arrow|Home|End|Page)/.test(e.code)) return
+    }
     const mod = e.ctrlKey || e.metaKey
     if (mod && e.code === 'KeyZ') {
       e.preventDefault()

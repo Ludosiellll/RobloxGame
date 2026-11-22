@@ -81,6 +81,12 @@ export class Ui {
   private search = ''
   private phonePanel: PhonePanel = null
   private menuOpen: string | null = null
+  /** открытое окно-диалог: пока оно есть, клавиши до сцены не доходят */
+  private modal: { el: HTMLElement; close: () => void } | null = null
+  /** на телефоне свойства выбранного открываются, когда палец отпущен: иначе вид меняет размер посреди перетаскивания */
+  private panelAfterRelease = false
+  /** прокрутка панели свойств до открытия выбора цвета и чьи это были свойства */
+  private inspScroll: { top: number; of: string } | null = null
   private tab: Tab = 'living'
   private controls: Control[] = []
   private signature = ''
@@ -99,8 +105,16 @@ export class Ui {
     app.append(this.dock, this.statusbar, this.file, this.projectFile, this.planFile)
     // выбор цвета занимает место свойств, пока открыт
     this.picker.onToggle = () => {
+      const of = this.selectionKey()
+      if (this.picker.isOpen) this.inspScroll = { top: this.inspector.scrollTop, of }
       this.signature = ''
       this.renderInspector()
+      if (this.picker.isOpen) this.inspector.scrollTop = 0
+      else {
+        // вернулись к тем же свойствам — на то же место
+        if (this.inspScroll?.of === of) this.inspector.scrollTop = this.inspScroll.top
+        this.inspScroll = null
+      }
     }
     overlay.append(this.modeBar, d.toaster.el, this.drop)
     // меню закрывается щелчком мимо и клавишей Esc
@@ -110,12 +124,8 @@ export class Ui {
         this.renderMenubar()
       }
     }, true)
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.menuOpen) {
-        this.menuOpen = null
-        this.renderMenubar()
-      }
-    })
+    // клавиши сначала достаются верхнему слою — окну, открытому меню, выбору цвета — и до сцены не доходят
+    window.addEventListener('keydown', (e) => this.layerKey(e), true)
     this.file.addEventListener('change', () => {
       const files = [...(this.file.files ?? [])]
       this.file.value = ''
@@ -131,7 +141,18 @@ export class Ui {
       this.planFile.value = ''
       if (file) void this.loadPlan(file)
     })
-    d.interact.onCalibration = () => { this.renderInspector(); this.renderMode(); this.renderStatus() }
+    d.interact.onCalibration = () => {
+      // обе точки стоят: дальше нужно поле расстояния, а оно в панели свойств (на телефоне она может быть свёрнута)
+      if (d.interact.calibration?.points.length === 2) this.showPanel('props')
+      this.renderInspector()
+      this.renderMode()
+      this.renderStatus()
+    }
+    d.interact.onRelease = () => {
+      if (!this.panelAfterRelease) return
+      this.panelAfterRelease = false
+      if (d.store.selection) this.showPanel('props')
+    }
     d.interact.onDrawing = () => { this.renderInspector(); this.renderMode(); this.renderToolbarState(); this.renderStatus() }
     // Ctrl+S — проект в файл, Ctrl+O — открыть файл проекта
     window.addEventListener('keydown', (e) => {
@@ -144,7 +165,12 @@ export class Ui {
         this.projectFile.click()
       }
     })
-    d.stage.onView(() => this.renderToolbarState())
+    d.stage.onView((view) => {
+      // комнаты рисуют в виде сверху: в объёмном протяжка должна снова поворачивать вид
+      if (view !== 'plan') d.interact.stopDrawing()
+      this.renderToolbarState()
+      this.renderStatus()
+    })
     this.bindDrop()
     d.store.on((c) => {
       if (c === 'lang') {
@@ -156,11 +182,17 @@ export class Ui {
         this.renderDock()
         this.signature = ''
       }
+      if (c === 'replace') this.picker.close()
       if (c === 'selection') {
         this.picker.close()
-        // на телефоне выбранное сразу показывает свои свойства
-        if (d.store.selection) this.showPanel('props')
+        // на телефоне выбранное показывает свои свойства; если палец ещё на экране — после того, как его отпустят
+        if (d.store.selection) {
+          if (d.interact.pressed) this.panelAfterRelease = true
+          else this.showPanel('props')
+        }
       }
+      // отмена или другая правка могли изменить цвет, который сейчас выбирают
+      if (c === 'doc') this.picker.sync()
       this.renderToolbarState()
       this.renderInspector()
       this.renderStatus()
@@ -197,7 +229,7 @@ export class Ui {
         label: this.t('menuFile'),
         items: [
           { label: this.t('menuNew'), id: 'menu-new', run: () => this.newProject() },
-          { label: this.t('loadDemo'), id: 'menu-demo', run: () => { store.replace(starterDoc()); stage.setView('3d') } },
+          { label: this.t('loadDemo'), id: 'menu-demo', run: () => this.openDemo() },
           null,
           { label: this.t('menuOpen'), key: 'Ctrl+O', id: 'menu-open', run: () => this.projectFile.click() },
           { label: this.t('menuSave'), key: 'Ctrl+S', id: 'menu-save', run: () => void this.saveProject() },
@@ -278,14 +310,48 @@ export class Ui {
     )
   }
 
+  private selectionKey(): string {
+    const sel = this.d.store.selection
+    return sel ? `${sel.kind}:${sel.id}` : 'scene'
+  }
+
+  /** Клавиша для верхнего слоя. Окно забирает все клавиши; меню и выбор цвета — только Esc. */
+  private layerKey(e: KeyboardEvent): void {
+    const modal = this.modal
+    if (modal) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        modal.close()
+      } else if (e.key === 'Tab') {
+        // фокус ходит по кругу внутри окна
+        const stops = [...modal.el.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href]')].filter((el) => !el.hasAttribute('disabled'))
+        const at = stops.indexOf(document.activeElement as HTMLElement)
+        const next = stops[at < 0 ? 0 : (at + (e.shiftKey ? -1 : 1) + stops.length) % stops.length]
+        e.preventDefault()
+        next?.focus()
+      }
+      e.stopPropagation()
+      return
+    }
+    if (e.key !== 'Escape') return
+    if (this.menuOpen) {
+      this.menuOpen = null
+      this.renderMenubar()
+      e.stopPropagation()
+    } else if (this.picker.isOpen) {
+      this.picker.close()
+      e.stopPropagation()
+    }
+  }
+
   /** Обычное окно с заголовком, текстом и кнопками. */
   private dialog(title: string, body: (Node | string)[], buttons: { label: string; id?: string; kind?: 'primary' | 'danger'; run?: () => void }[]): void {
+    this.modal?.close()
+    const back = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const close = (): void => {
       veil.remove()
-      document.removeEventListener('keydown', onKey)
-    }
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') close()
+      if (this.modal?.el === veil) this.modal = null
+      if (back?.isConnected) back.focus()
     }
     const veil: HTMLElement = h(
       'div',
@@ -298,9 +364,20 @@ export class Ui {
         h('footer', { class: 'modal-foot' }, ...buttons.map((b) => h('button', { class: `btn${b.kind === 'primary' ? ' btn-primary' : b.kind === 'danger' ? ' btn-danger' : ''}`, type: 'button', id: b.id, onclick: () => { close(); b.run?.() } }, b.label))),
       ),
     )
-    document.addEventListener('keydown', onKey)
+    this.modal = { el: veil, close }
     this.app.append(veil)
-    veil.querySelector<HTMLElement>('.modal-foot .btn')?.focus()
+    // в фокусе — безопасная кнопка: случайный Enter ничего не удаляет
+    const foot = veil.querySelector<HTMLElement>('.modal-foot')
+    ;(foot?.querySelector<HTMLElement>('.btn-primary') ?? foot?.querySelector<HTMLElement>('.btn:not(.btn-danger)') ?? foot?.querySelector<HTMLElement>('.btn'))?.focus()
+  }
+
+  /** Открыть пример квартиры вместо текущего проекта — с вопросом: отменить это нельзя. */
+  private openDemo(): void {
+    const { store, stage } = this.d
+    this.dialog(this.t('loadDemo'), [h('p', {}, this.t('demoConfirm'))], [
+      { label: this.t('demoYes'), kind: 'danger', id: 'demo-yes', run: () => { store.replace(starterDoc()); stage.setView('3d') } },
+      { label: this.t('cancel') },
+    ])
   }
 
   private newProject(): void {
@@ -389,7 +466,7 @@ export class Ui {
     const doc = store.doc
     const sel = store.selection
     const cal = interact.calibration
-    const hint: TextKey = interact.drawing ? 'statusDraw' : cal ? 'statusScale' : sel?.kind === 'item' ? 'statusItem' : sel?.kind === 'room' ? 'statusRoom' : sel?.kind === 'opening' ? 'statusOpening' : sel?.kind === 'underlay' ? 'statusPlan' : 'statusIdle'
+    const hint: TextKey = interact.drawing ? 'statusDraw' : cal ? 'statusScale' : sel?.kind === 'item' ? 'statusItem' : sel?.kind === 'room' ? 'statusRoom' : sel?.kind === 'opening' ? 'statusOpening' : sel?.kind === 'underlay' ? 'statusPlan' : this.d.stage.view === 'plan' ? 'statusIdlePlan' : 'statusIdle'
     this.statusbar.replaceChildren(
       h('span', { class: 'status-hint' }, this.t(hint)),
       h('span', { class: 'status-stats' }, this.t('statusStats', { rooms: doc.rooms.length, area: fmt(store.lang, floorArea(doc.rooms), 1), items: doc.items.length })),
@@ -404,10 +481,20 @@ export class Ui {
 
   /** На телефоне на экране помещается одна панель: каталог или свойства. На компьютере видны обе. */
   showPanel(which: PhonePanel): void {
+    const host = this.d.stage.renderer.domElement.parentElement
+    const before = host?.clientHeight ?? 0
     this.phonePanel = which
     this.catalog.classList.toggle('is-open', which === 'catalog')
     this.inspector.classList.toggle('is-open', which === 'props')
     this.renderDock()
+    // на телефоне панель отнимает высоту у вида; камера придвигается, чтобы квартира не стала мелкой
+    const after = host?.clientHeight ?? 0
+    if (before > 0 && after > 0 && before !== after) this.d.stage.keepScale(after / before)
+  }
+
+  /** Закрыть выбор цвета (обучению нужна сама панель свойств). */
+  closePicker(): void {
+    this.picker.close()
   }
 
   private async snapshot(): Promise<void> {
@@ -495,7 +582,8 @@ export class Ui {
       dragged = false
       const move = (ev: PointerEvent) => {
         if (!start || dragged) return
-        if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > 8) {
+        // вещь появляется, когда указатель дошёл до сцены: над панелями ей негде стоять
+        if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) > 8 && interact.overView(ev)) {
           dragged = true
           interact.startPlaceDrag(src, ev)
         }
@@ -699,7 +787,7 @@ export class Ui {
     const btn = h('button', { class: 'chip', type: 'button' }, sw, h('span', { class: 'chip-label' }, label), code)
     btn.addEventListener('click', () => {
       const cur = get(this.d.store.doc) ?? '#cccccc'
-      this.picker.open({ title: label, current: cur, onPick, onReset, palette: () => projectColors(this.d.store.doc) })
+      this.picker.open({ title: label, current: cur, read: () => get(this.d.store.doc), onPick, onReset, palette: () => projectColors(this.d.store.doc) })
     })
     this.controls.push({
       el: btn,

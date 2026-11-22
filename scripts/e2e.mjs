@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { unzipSync, zipSync } from 'fflate'
 import { serve, GL_ARGS } from './serve.mjs'
+import { lookChecks } from './e2e-look.mjs'
 
 const require = createRequire(import.meta.url)
 const { chromium } = require('playwright')
@@ -657,6 +658,9 @@ const aim = await ph.evaluate(() => { const r = document.querySelector('.tour-ma
 check('на телефоне шаг «перекрасить» показывает на видимый образец цвета', aim.step === 'paint' && aim.inInspector, JSON.stringify(aim))
 await ph.screenshot({ path: join(ROOT, 'shots', 'e2e-phone-tour-paint.png') })
 await phone.close()
+
+// 13. вид «обычная программа»: перетаскивание из каталога, клавиши при открытых окнах, телефон, обучение в малом окне
+await lookChecks({ browser, url, check, errors })
 
 check('нет ошибок в консоли', errors.length === 0, errors.slice(0, 4).join(' | '))
 await browser.close()

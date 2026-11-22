@@ -42,6 +42,13 @@ export class History<T> {
     if (this.base) this.set(this.cur)
   }
 
+  /** Бросить незавершённую серию промежуточных изменений: вернуться к состоянию до неё, в историю ничего не попадает. */
+  abort(): void {
+    if (!this.base) return
+    this.cur = this.base.value
+    this.base = null
+  }
+
   undo(): T | null {
     this.seal()
     const prev = this.past.pop()

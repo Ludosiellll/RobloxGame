@@ -71,4 +71,26 @@ describe('History', () => {
     expect(h.present).toBe('a2')
     expect(h.undo()).toBe('a')
   })
+
+  it('abort drops an unfinished drag and returns to the state before it', () => {
+    const h = new History({ n: 0 })
+    h.set({ n: 1 })
+    h.set({ n: 5 }, true)
+    h.set({ n: 6 }, true)
+    h.abort()
+    expect(h.present).toEqual({ n: 1 })
+    // the dropped drag left no trace: one undo goes back to the start, nothing to redo
+    expect(h.undo()).toEqual({ n: 0 })
+    expect(h.canUndo).toBe(false)
+    h.redo()
+    expect(h.present).toEqual({ n: 1 })
+  })
+
+  it('abort without an unfinished drag changes nothing', () => {
+    const h = new History({ n: 0 })
+    h.set({ n: 1 })
+    h.abort()
+    expect(h.present).toEqual({ n: 1 })
+    expect(h.canUndo).toBe(true)
+  })
 })

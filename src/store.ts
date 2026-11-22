@@ -6,7 +6,7 @@ import { starterDoc } from './core/starter'
 
 export type Selection = { kind: 'item' | 'room' | 'opening' | 'underlay'; id: string } | null
 export type Lang = 'ru' | 'en'
-type Change = 'doc' | 'selection' | 'lang'
+type Change = 'doc' | 'selection' | 'lang' | 'replace'
 
 const DOC_KEY = 'maket.project.v1'
 const LANG_KEY = 'maket.lang'
@@ -99,6 +99,14 @@ export class Store {
     this.emit('doc')
   }
 
+  /** Бросить начатое перетаскивание: проект возвращается к состоянию до него, шага отмены не остаётся. */
+  cancel(): void {
+    this.history.abort()
+    this.fixSelection()
+    this.emit('doc')
+    this.scheduleSave()
+  }
+
   /** Поправить проект, не делая из этого шага отмены (например, убрать предметы, оставшиеся без модели). */
   amend(fn: (d: Doc) => Doc): void {
     const next = fn(this.doc)
@@ -127,6 +135,7 @@ export class Store {
   replace(doc: Doc): void {
     this.history.reset(doc)
     this.selection = null
+    this.emit('replace')
     this.emit('selection')
     this.emit('doc')
     this.scheduleSave()

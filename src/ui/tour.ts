@@ -21,7 +21,13 @@ export interface TourDeps {
   showPanel: (which: 'catalog' | 'props') => void
   /** выйти из режимов рисования комнаты и разметки масштаба: в обучении мышь должна работать как обычно */
   stopModes: () => void
+  /** закрыть выбор цвета: шагу нужна сама панель свойств */
+  closePicker: () => void
 }
+
+/** Узкий экран: панель под сценой, места мало — окно шага без записи. */
+const NARROW = '(max-width: 900px)'
+const area = (a: Rect, b: Rect): number => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y))
 
 const DONE_KEY = 'maket.tour'
 const TITLES: Record<TourStepId, TextKey> = { look: 'tourLookT', add: 'tourAddT', move: 'tourMoveT', turn: 'tourTurnT', paint: 'tourPaintT', room: 'tourRoomT', light: 'tourLightT', plan: 'tourPlanT' }
@@ -34,7 +40,7 @@ const rectOf = (el: Element | null): Rect | null => {
 /** Видимая часть элемента: то, что внутри прокручиваемой панели скрыто за её краем, показывать нельзя. */
 const visibleRect = (el: Element | null): Rect | null => {
   const r = rectOf(el)
-  const box = rectOf(el?.closest('.inspector, .picker, .catalog') ?? null)
+  const box = rectOf(el?.closest('.inspector, .catalog') ?? null)
   if (!r || !box) return r
   const x0 = Math.max(r.x, box.x)
   const y0 = Math.max(r.y, box.y)
@@ -57,10 +63,21 @@ export class Tour {
   private settled = true
   private raf = 0
   private nextTimer: ReturnType<typeof setTimeout> | null = null
+  /** записи, которые не загрузились: второй раз их не запрашиваем */
+  private readonly noClip = new Set<string>()
+  /** в каком месте сейчас стоит окно шага */
+  private spot = 0
+  /** окну с записью не хватает места, чтобы не закрывать отметку: показываем шаги без записи, пока окно программы не изменит размер */
+  private compact = false
 
   constructor(private readonly d: TourDeps) {
     this.el.append(this.mark, this.panel)
     d.store.on((c) => c === 'lang' && this.rerender())
+    // заставка и итог стоят без покадрового цикла: при смене размера окна переставляем их сами
+    window.addEventListener('resize', () => {
+      this.compact = false
+      if (this.active && (!this.state || this.state.finished)) this.placePanel(null)
+    })
   }
 
   private t(key: TextKey, vars?: Record<string, string | number>): string {
@@ -102,11 +119,13 @@ export class Tour {
     this.mark.hidden = true
     delete this.panel.dataset.step
     this.panel.className = 'tour-panel'
+    this.spot = 0
     this.panel.replaceChildren(
       this.head(this.t('tourTitle')),
       h('div', { class: 'tour-body' }, h('p', {}, this.t('tourWelcomeText'))),
       h('footer', { class: 'tour-foot' }, h('button', { class: 'btn btn-primary', type: 'button', id: 'tour-start', onclick: () => this.begin() }, this.t('tourStart')), h('button', { class: 'btn', type: 'button', id: 'tour-later', onclick: () => this.end() }, this.t('tourLater'))),
     )
+    this.placePanel(null)
   }
 
   begin(): void {
@@ -132,6 +151,9 @@ export class Tour {
     cancelAnimationFrame(this.raf)
     this.state = null
     this.el.hidden = true
+    // содержимое убираем: запись не должна играть в скрытом окне
+    this.panel.replaceChildren()
+    delete this.panel.dataset.step
     this.remember()
   }
 
@@ -155,7 +177,8 @@ export class Tour {
     const step = this.step()
     if (!step) return this.finish()
     this.stopStep()
-    // подготовка: чтобы нужная панель была на виду
+    // подготовка: чтобы нужная панель была на виду (выбор цвета с прошлого шага её закрывал бы)
+    this.d.closePicker()
     if (step === 'look' || step === 'room' || step === 'light') store.select(null)
     if (step === 'add') this.d.showPanel('catalog')
     if (step === 'light') this.d.showPanel('props')
@@ -255,7 +278,9 @@ export class Tour {
       this.renderStep()
       this.reveal(step, sit)
     }
-    this.placeMark(this.completing ? null : this.target(step, sit))
+    const mark = this.completing ? null : this.target(step, sit)
+    this.placeMark(mark)
+    this.placePanel(mark)
     if (this.d.stage.animating) {
       this.settled = false
       return
@@ -287,6 +312,55 @@ export class Tour {
     }
   }
 
+  /**
+   * Поставить окно шага туда, где оно не закрывает отметку и то, с чем сейчас работают.
+   * На компьютере — один из углов сцены; на узком экране — над нижней панелью или у верха сцены.
+   */
+  private placePanel(m: Mark): void {
+    const view = rectOf(document.querySelector('.view'))
+    const host = this.el.getBoundingClientRect()
+    const w = this.panel.offsetWidth
+    const ht = this.panel.offsetHeight
+    if (!view || !w || !ht) return
+    const pad = 10
+    // полоса режима («Готово») вверху сцены должна оставаться доступной
+    const bar = rectOf(document.querySelector('.mode-bar'))
+    const top = view.y + (bar ? bar.h : 0) + pad
+    let spots: { x: number; y: number }[]
+    if (window.matchMedia(NARROW).matches) {
+      const dock = rectOf(document.querySelector('.dock-tabs'))
+      const floor = (dock ? dock.y : host.top + host.height) - pad
+      spots = [{ x: view.x + (view.w - w) / 2, y: floor - ht }, { x: view.x + (view.w - w) / 2, y: top }]
+    } else {
+      const left = view.x + pad
+      const right = view.x + view.w - w - pad
+      const bottom = view.y + view.h - ht - pad
+      spots = [{ x: left, y: bottom }, { x: right, y: bottom }, { x: right, y: top }, { x: left, y: top }]
+    }
+    // место вокруг отметки: у точки в сцене — сама вещь, у рамки — небольшой запас
+    const keep: Rect | null = !m ? null : 'rect' in m ? { x: m.rect.x - 12, y: m.rect.y - 12, w: m.rect.w + 24, h: m.rect.h + 24 } : { x: m.point.x - 70, y: m.point.y - 70, w: 140, h: 140 }
+    const cost = (p: { x: number; y: number }): number => (keep ? area({ x: p.x, y: p.y, w, h: ht }, keep) : 0)
+    if (this.spot >= spots.length) this.spot = 0
+    // с места не уходим, пока оно ничего не закрывает: окно не должно прыгать
+    if (cost(spots[this.spot]) > 0) {
+      let best = this.spot
+      spots.forEach((p, i) => {
+        if (cost(p) < cost(spots[best])) best = i
+      })
+      this.spot = best
+      // с записью окно шага высокое; если оно всё равно что-то закрывает — оставляем один текст
+      const clip = this.panel.querySelector('.tour-clip')
+      if (cost(spots[best]) > 0 && clip) {
+        this.compact = true
+        clip.remove()
+        return
+      }
+    }
+    const at = spots[this.spot]
+    this.panel.style.left = `${Math.round(at.x - host.left)}px`
+    this.panel.style.top = `${Math.round(Math.max(at.y, view.y + pad) - host.top)}px`
+  }
+
   private complete(step: TourStepId): void {
     this.completing = true
     if (step === 'add' && this.start) {
@@ -315,10 +389,12 @@ export class Tour {
   }
 
   private text(step: TourStepId, sit: string): TextKey {
-    if (step === 'turn') return sit === 'selected' ? 'tourTurnP2' : 'tourTurnP'
+    // на экране с касаниями нет мыши, колеса и клавиши R
+    const touch = window.matchMedia('(pointer: coarse)').matches
+    if (step === 'turn') return sit === 'selected' ? (touch ? 'tourTurnP2Touch' : 'tourTurnP2') : 'tourTurnP'
     if (step === 'paint') return sit === 'picker' ? 'tourPaintP3' : sit === 'selected' ? 'tourPaintP2' : 'tourPaintP'
     if (step === 'room') return sit === 'selected' ? 'tourRoomP2' : 'tourRoomP'
-    const map: Record<string, TextKey> = { look: 'tourLookP', add: 'tourAddP', move: 'tourMoveP', light: 'tourLightP', plan: 'tourPlanP' }
+    const map: Record<string, TextKey> = { look: touch ? 'tourLookPTouch' : 'tourLookP', add: 'tourAddP', move: touch ? 'tourMovePTouch' : 'tourMoveP', light: 'tourLightP', plan: 'tourPlanP' }
     return map[step]
   }
 
@@ -331,20 +407,31 @@ export class Tour {
     const done = sameStep && this.completing
     this.panel.className = `tour-panel${done ? ' is-done' : ''}`
     this.panel.dataset.step = step
-    // запись действия: её не пересоздаём, пока шаг тот же, чтобы она не начиналась заново
-    let clip = sameStep ? this.panel.querySelector<HTMLElement>('.tour-clip') : null
-    if (!clip) {
-      const video = h('video', { class: 'tour-video', src: `tour/${step}-${this.d.store.lang}.mp4`, muted: true, loop: true, autoplay: true, playsInline: true, preload: 'auto', 'aria-hidden': 'true' })
-      const box = h('div', { class: 'tour-clip' }, video)
-      // записи может не быть (не загрузилась) — тогда остаётся один текст
-      video.addEventListener('error', () => box.remove())
+    // запись действия: её не пересоздаём, пока шаг и язык те же, чтобы она не начиналась заново
+    const src = `tour/${step}-${this.d.store.lang}.mp4`
+    let clip = this.panel.querySelector<HTMLElement>('.tour-clip')
+    if (clip?.dataset.src !== src) clip = null
+    if (!clip && !this.compact && !this.noClip.has(src) && !window.matchMedia(NARROW).matches) {
+      const video = h('video', { class: 'tour-video', src, muted: true, loop: true, autoplay: true, playsInline: true, preload: 'auto', 'aria-hidden': 'true' })
+      const box = h('div', { class: 'tour-clip', 'data-src': src }, video)
+      // записи может не быть (не загрузилась или грузится слишком долго) — тогда остаётся один текст
+      const drop = (): void => {
+        this.noClip.add(src)
+        box.remove()
+      }
+      const slow = setTimeout(() => video.readyState < 2 && drop(), 8000)
+      video.addEventListener('loadeddata', () => clearTimeout(slow))
+      video.addEventListener('error', () => {
+        clearTimeout(slow)
+        drop()
+      })
       void video.play().catch(() => {})
       clip = box
     }
     this.panel.replaceChildren(
       this.head(this.t('tourStepOf', { n: st.index + 1, total })),
       h('div', { class: 'tour-progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(total), 'aria-valuenow': String(st.index) }, h('i', { style: { width: `${(st.index / total) * 100}%` } })),
-      clip,
+      ...(clip ? [clip] : []),
       h('div', { class: 'tour-body' }, h('h2', {}, this.t(TITLES[step])), h('p', {}, this.t(this.text(step, this.situation(step)))), h('p', { class: 'tour-done' }, h('span', { html: ICON.check }), this.t('tourDone'))),
       h('footer', { class: 'tour-foot' }, h('button', { class: 'btn', type: 'button', id: 'tour-skip', onclick: () => !this.completing && this.advance(false) }, this.t('tourSkip'))),
     )
@@ -356,11 +443,13 @@ export class Tour {
     this.remember()
     this.mark.hidden = true
     delete this.panel.dataset.step
+    this.spot = 0
     this.panel.className = 'tour-panel is-finish'
     this.panel.replaceChildren(
       this.head(this.t('tourTitle')),
       h('div', { class: 'tour-body' }, h('h2', {}, this.t('tourFinishTitle')), h('p', {}, this.t('tourFinishText')), h('ul', { class: 'tour-next' }, h('li', {}, this.t('tourNext1')), h('li', {}, this.t('tourNext2')), h('li', {}, this.t('tourNext3')))),
       h('footer', { class: 'tour-foot' }, h('button', { class: 'btn btn-primary', type: 'button', id: 'tour-close', onclick: () => this.end() }, this.t('close'))),
     )
+    this.placePanel(null)
   }
 }

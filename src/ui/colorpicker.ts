@@ -9,6 +9,8 @@ import { h, ICON } from './dom'
 export interface ColorRequest {
   title: string
   current: string
+  /** цвет в проекте сейчас; null — красить больше нечего (вещь удалена, цвет сброшен отменой) */
+  read?: () => string | null
   onPick: (hex: string) => void
   onReset?: () => void
   /** цвета, уже использованные в проекте: их можно взять за основу сочетаний */
@@ -29,9 +31,16 @@ export class ColorPicker {
 
   constructor(private readonly lang: () => Lang) {
     this.el = h('section', { class: 'picker', hidden: true })
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !this.el.hidden) this.close()
-    })
+  }
+
+  /** Проект изменился не отсюда (отмена, повтор): показать цвет, который в нём сейчас, или закрыться. */
+  sync(): void {
+    if (!this.req?.read || this.el.hidden) return
+    const now = this.req.read()
+    if (now === null) return this.close()
+    if (now.toLowerCase() === this.current) return
+    this.current = now.toLowerCase()
+    this.render()
   }
 
   open(req: ColorRequest): void {
