@@ -1,0 +1,54 @@
+name: release
+# Собирает программу для Windows и выкладывает её в релиз v<версия из package.json>.
+# Новый выпуск — это новая версия в package.json: релиз с уже существующей версией не пересобирается.
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - .github/workflows/release.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      exists: ${{ steps.ver.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: ver
+        run: |
+          v=$(node -p "require('./package.json').version")
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          if gh release view "v$v" >/dev/null 2>&1; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+  windows:
+    needs: plan
+    if: needs.plan.outputs.exists == 'false'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx electron-builder --win --x64 --publish never
+      - run: ls -la release
+      - name: Выложить релиз
+        run: |
+          v="${{ needs.plan.outputs.version }}"
+          gh release create "v$v" release/Maket-Setup.exe release/Maket-Portable.exe \
+            --target "$GITHUB_SHA" --title "Макет $v" --notes-file desktop/RELEASE_NOTES.md

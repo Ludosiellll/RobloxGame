@@ -2,7 +2,7 @@
   "name": "maket",
   "private": true,
   "type": "module",
-  "description": "Макет — 3D-приложение для дизайна интерьера и архитектуры в браузере",
+  "description": "Макет — 3D-приложение для дизайна интерьера и планировки",
   "scripts": {
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
@@ -12,17 +12,80 @@
     "pack": "node scripts/pack.mjs",
     "e2e": "node scripts/e2e.mjs",
     "shots": "node scripts/shots.mjs",
-    "artifact": "node scripts/artifact.mjs"
-  },
-  "dependencies": {
-    "fflate": "0.8.3",
-    "three": "0.187.0"
+    "artifact": "node scripts/artifact.mjs",
+    "icon": "node scripts/icon.mjs",
+    "desktop": "electron desktop/main.cjs",
+    "dist:win": "electron-builder --win --x64 --publish never"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "@types/three": "0.187.0",
+    "electron": "45.4.1",
+    "electron-builder": "26.18.0",
+    "fflate": "0.8.3",
+    "three": "0.187.0",
     "typescript": "7.0.2",
     "vite": "8.3.8",
     "vitest": "5.1.1"
+  },
+  "version": "0.1.0",
+  "productName": "Maket",
+  "author": "Maket",
+  "main": "desktop/main.cjs",
+  "build": {
+    "appId": "app.maket.desktop",
+    "productName": "Maket",
+    "copyright": "Maket",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "!dist/assets/draco_*",
+      "desktop/main.cjs",
+      "desktop/icon.png",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "desktop/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Макет",
+      "artifactName": "Maket-Setup.${ext}",
+      "installerIcon": "desktop/icon.ico",
+      "uninstallerIcon": "desktop/icon.ico",
+      "uninstallDisplayName": "Макет"
+    },
+    "portable": {
+      "artifactName": "Maket-Portable.${ext}"
+    },
+    "linux": {
+      "target": "dir",
+      "icon": "desktop/icon.png"
+    },
+    "electronLanguages": [
+      "en-US",
+      "ru"
+    ]
   }
 }
