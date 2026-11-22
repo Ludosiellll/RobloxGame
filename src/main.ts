@@ -13,6 +13,7 @@ import { underlaySize } from './core/underlay'
 import { Store } from './store'
 import { UserModels } from './userModels'
 import { Toaster, Ui } from './ui/app'
+import { Tour } from './ui/tour'
 import { h } from './ui/dom'
 
 async function start(): Promise<void> {
@@ -95,6 +96,10 @@ async function start(): Promise<void> {
   const ui = new Ui(uiRoot, { store, stage, interact, items, rooms, userModels, images, toaster })
   // старые картинки планов, на которые проект уже не ссылается, из хранилища убираем
   void images.keepOnly(store.doc.scene.underlay?.image ?? null)
+  // обучение: при первом запуске предлагается само, потом открывается из справки
+  const tour = new Tour({ store, stage, items, openScene: () => ui.openScene() })
+  uiRoot.append(tour.el)
+  ui.onTour = () => tour.welcome()
   document.documentElement.lang = store.lang
   store.on((c) => c === 'lang' && (document.documentElement.lang = store.lang))
 
@@ -104,8 +109,10 @@ async function start(): Promise<void> {
     stage.invalidate()
   })
 
+  tour.maybeWelcome()
+
   // для проверочных скриптов
-  Object.assign(window, { __maket: { store, stage, interact, items, rooms, ui, userModels, underlay, images, THREE } })
+  Object.assign(window, { __maket: { store, stage, interact, items, rooms, ui, userModels, underlay, images, tour, THREE } })
 }
 
 void start()

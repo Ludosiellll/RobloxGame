@@ -69,6 +69,8 @@ export class Ui {
   /** в комнате уже есть мебель: ждём ответа, заменить её или добавить новую */
   private furnishAsk: { room: string; kind: RoomKind } | null = null
   private trayOpen = true
+  /** открыть обучение (подключается при запуске) */
+  onTour: () => void = () => {}
   private sceneOpen = false
 
   constructor(root: HTMLElement, private readonly d: UiDeps) {
@@ -174,6 +176,7 @@ export class Ui {
     this.helpEl.replaceChildren(
       h('header', { class: 'fan-head' }, h('div', { class: 'label' }, this.t('helpTitle')), h('button', { class: 'icon-btn', type: 'button', 'aria-label': this.t('cancel'), html: ICON.close, onclick: () => (this.helpEl.hidden = true) })),
       h('ul', { class: 'help-list' }, ...(['helpMove', 'helpOrbit', 'helpRooms', 'helpPlan', 'helpImport', 'helpProject', 'helpKeys'] as TextKey[]).map((k) => h('li', {}, this.t(k)))),
+      h('div', { class: 'help-tour' }, h('button', { class: 'btn btn-tape', type: 'button', id: 'help-tour', onclick: () => { this.helpEl.hidden = true; this.onTour() } }, this.t('tourOpen'))),
       h('p', { class: 'credit' }, this.t('kitCredit')),
     )
     this.helpEl.hidden = false
@@ -313,6 +316,12 @@ export class Ui {
       const files = [...(e.dataTransfer?.files ?? [])]
       if (files.length) void this.importFiles(files)
     })
+  }
+
+  /** Раскрыть панель сцены (на телефоне она свёрнута до заголовка). */
+  openScene(): void {
+    this.sceneOpen = true
+    this.renderInspector()
   }
 
   /** Сохранить проект вместе со своими моделями в один файл. */
@@ -626,7 +635,7 @@ export class Ui {
     return [
       this.head(name, cat ? (lang === 'ru' ? cat.ru : cat.en) : user ? this.t('myModels') : undefined),
       this.section(this.t('rotate'),
-        h('div', { class: 'btn-row' },
+        h('div', { class: 'btn-row', 'data-tour': 'rotate' },
           h('button', { class: 'btn with-icon', type: 'button', title: 'Shift+R', onclick: () => interact.rotateSelected(-90) }, h('span', { html: ICON.rotL }), '90°'),
           h('button', { class: 'btn with-icon', type: 'button', title: 'R', onclick: () => interact.rotateSelected(90) }, h('span', { html: ICON.rotR }), '90°')),
         this.slider({ id: 'f-rot', label: this.t('rotate'), min: 0, max: 345, step: 15, get: (d) => cur(d)?.rot ?? null, set: (v) => store.update((d) => updateItem(d, id, { rot: v }), true), show: (v) => `${Math.round(v)}°` }),
@@ -636,7 +645,7 @@ export class Ui {
         heightField,
         this.slider({ id: 'f-lift', label: this.t('lift'), min: 0, max: 2.6, step: 0.05, get: (d) => cur(d)?.y ?? null, set: (v) => store.update((d) => updateItem(d, id, { y: v, lift: v > 0 }), true), show: (v) => `${Math.round(v * 100)} ${this.t('cm')}` }),
       ),
-      slots.length ? this.section(this.t('colors'), ...colorRows) : null,
+      slots.length ? this.section(this.t('colors'), h('div', { class: 'chip-list', 'data-tour': 'colors' }, ...colorRows)) : null,
       this.section(this.t('project'),
         h('div', { class: 'btn-row' },
           h('button', { class: 'btn with-icon', type: 'button', title: 'Ctrl+D', onclick: () => interact.duplicateSelected() }, h('span', { html: ICON.copy }), this.t('duplicate')),

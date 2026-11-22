@@ -105,6 +105,7 @@ button { cursor: pointer; }
 .chip { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 10px; height: 38px; padding: 0 10px 0 6px; border: 1px solid var(--edge); background: #fff; border-radius: 2px; text-align: left; }
 .chip:hover { border-color: var(--ink); }
 .sw { width: 26px; height: 26px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18); }
+.chip-list { display: flex; flex-direction: column; gap: 10px; }
 .chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mat-row { display: flex; gap: 8px; }
 .mat-sw { width: 44px; height: 30px; border: 0; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25); background-image: linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.22) 1px, transparent 1px); background-size: 8px 8px; }
@@ -201,7 +202,91 @@ button { cursor: pointer; }
 .tag { position: absolute; left: 0; top: 0; background: var(--tape); color: var(--tape-ink); font: 600 11.5px/1 var(--f-mono); padding: 4px 7px 3px; border-radius: 1px; white-space: nowrap; box-shadow: 0 1px 0 var(--tape-deep), 0 4px 8px -3px rgba(0, 0, 0, 0.6); will-change: transform; }
 
 /* ---------- телефон ---------- */
+/* ---------- обучение ---------- */
+#ui > .tour { position: absolute; inset: 0; z-index: 60; pointer-events: none; }
+.tour-veil { position: absolute; inset: 0; background: rgba(15, 32, 28, 0.56); opacity: 0; transition: opacity 0.3s; }
+.tour.is-intro .tour-veil { opacity: 1; pointer-events: auto; }
+.tour.is-intro .tour-hole, .tour.is-intro .tour-hand, .tour.is-intro .tour-trail { display: none; }
+/* окно подсветки: вокруг затемнено, по углам — метки обреза, как на печатном листе */
+.tour-hole { position: absolute; left: 0; top: 0; width: 0; height: 0; opacity: 0; box-shadow: 0 0 0 200vmax rgba(15, 32, 28, 0.36); }
+.tour-hole.is-gliding { transition: left 0.55s cubic-bezier(0.3, 0.7, 0.2, 1), top 0.55s cubic-bezier(0.3, 0.7, 0.2, 1), width 0.55s cubic-bezier(0.3, 0.7, 0.2, 1), height 0.55s cubic-bezier(0.3, 0.7, 0.2, 1), opacity 0.3s; }
+.tour-hole i { position: absolute; width: 16px; height: 16px; border: 0 solid var(--tape); }
+.tour-hole i:nth-child(1) { left: -8px; top: -8px; border-left-width: 2.5px; border-top-width: 2.5px; }
+.tour-hole i:nth-child(2) { right: -8px; top: -8px; border-right-width: 2.5px; border-top-width: 2.5px; }
+.tour-hole i:nth-child(3) { right: -8px; bottom: -8px; border-right-width: 2.5px; border-bottom-width: 2.5px; }
+.tour-hole i:nth-child(4) { left: -8px; bottom: -8px; border-left-width: 2.5px; border-bottom-width: 2.5px; }
+/* «рука»: показывает жест прямо в сцене */
+.tour-hand { position: absolute; left: 0; top: 0; margin: -3px 0 0 -5px; opacity: 0; will-change: transform, opacity; }
+.tour-hand svg { display: block; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); }
+.tour-ring { position: absolute; left: 5px; top: 3px; width: 36px; height: 36px; margin: -18px 0 0 -18px; border: 3px solid var(--tape); border-radius: 50%; opacity: 0; }
+.tour-trail { position: absolute; left: 0; top: 0; width: 0; height: 0; border-top: 3px dashed var(--tape); transform-origin: 0 0; opacity: 0; }
+/* карточка шага */
+.tour-card { position: absolute; left: var(--side-l); top: 72px; width: 340px; max-width: calc(100% - 32px); padding: 0 0 12px; pointer-events: auto; transition: transform 0.4s cubic-bezier(0.3, 0.7, 0.2, 1); }
+.tour-card.is-low { transform: translateY(calc(100dvh - 100% - 290px)); }
+.tour-card h2 { margin: 3px 16px 7px; font: 800 25px/1.05 var(--f-mark); letter-spacing: 0.035em; text-transform: uppercase; }
+.tour-card p { margin: 0 16px 11px; font-size: 13.5px; line-height: 1.46; }
+.tour-eyebrow { margin: 13px 16px 0; font: 400 11px/1 var(--f-mono); letter-spacing: 0.04em; color: var(--ink-2); }
+.tour-foot { display: flex; justify-content: space-between; gap: 8px; padding: 3px 16px 0; }
+/* лента-рулетка: каждое деление — шаг */
+.tour-tape { display: grid; grid-template-columns: repeat(8, 1fr); height: 24px; background: var(--tape); color: var(--tape-ink); border-bottom: 1px solid var(--tape-deep); }
+.tour-cell { position: relative; display: grid; place-items: center; font: 500 10.5px/1 var(--f-mono); border-left: 1px solid rgba(36, 29, 0, 0.4); }
+.tour-cell:first-child { border-left: 0; }
+.tour-cell::after { content: ''; position: absolute; left: 50%; bottom: 0; width: 1px; height: 5px; background: rgba(36, 29, 0, 0.4); }
+.tour-cell.is-now { font-weight: 700; box-shadow: inset 0 -4px 0 var(--tape-ink); }
+.tour-cell.is-skipped { color: rgba(36, 29, 0, 0.42); }
+.tour-cell.is-done { background: var(--tape-ink); color: var(--tape); animation: tour-click 0.38s cubic-bezier(0.2, 1.5, 0.4, 1); }
+.tour-cell.is-done::after { display: none; }
+@keyframes tour-click { from { transform: scaleY(0.35); } }
+/* штамп «готово» */
+.tour-stamp { position: absolute; right: 14px; top: 36px; padding: 4px 9px 2px; border: 2.5px solid var(--blade); color: var(--blade); font: 800 17px/1 var(--f-mark); letter-spacing: 0.14em; text-transform: uppercase; transform: rotate(-7deg); opacity: 0; pointer-events: none; }
+.tour-card.is-done .tour-stamp { animation: tour-stamp 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.3) forwards; }
+@keyframes tour-stamp { from { opacity: 0; transform: rotate(-7deg) scale(1.9); } 55% { opacity: 1; } to { opacity: 1; transform: rotate(-7deg) scale(1); } }
+/* заставка и итог */
+.tour-card.is-center { left: 50%; top: 50%; width: 430px; padding-bottom: 16px; transform: translate(-50%, -50%); animation: tour-rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes tour-rise { from { opacity: 0; transform: translate(-50%, calc(-50% + 18px)); } }
+.tour-card.is-center h2 { font-size: 31px; margin-top: 2px; }
+.tour-card.is-center .btn-row, .tour-card.is-center .hint { margin: 0 16px; }
+.tour-card.is-center .hint { margin-top: 10px; }
+.tour-tape-label { display: inline-block; margin: 15px 16px 7px; padding: 4px 9px 2px; background: var(--tape); color: var(--tape-ink); font: 700 12.5px/1 var(--f-mark); letter-spacing: 0.14em; text-transform: uppercase; transform: rotate(-1.4deg); }
+.tour-art { height: 156px; background: var(--mat); border-bottom: 1px solid var(--rule); overflow: hidden; }
+.tour-art svg { display: block; width: 100%; height: 100%; }
+.art-grid { opacity: 0.55; }
+.art-floor, .art-wall, .art-window { stroke-dasharray: 620; stroke-dashoffset: 620; fill-opacity: 0; animation: art-draw 0.9s ease-out forwards, art-fill 0.45s ease-out forwards; }
+.art-floor { animation-delay: 0.2s, 0.95s; }
+.art-wall-l { animation-delay: 0.55s, 1.2s; }
+.art-wall-r { animation-delay: 0.75s, 1.35s; }
+.art-window { animation-delay: 1.35s, 1.8s; }
+@keyframes art-draw { to { stroke-dashoffset: 0; } }
+@keyframes art-fill { to { fill-opacity: 1; } }
+.art-chair { opacity: 0; animation: art-drop 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) 1.95s forwards, art-nudge 3.4s ease-in-out 3.1s infinite; }
+@keyframes art-drop { from { opacity: 0; transform: translateY(-28px); } to { opacity: 1; transform: none; } }
+@keyframes art-nudge { 0%, 24%, 100% { opacity: 1; transform: none; } 46%, 80% { opacity: 1; transform: translate(34px, 17px); } }
+.art-hand { opacity: 0; animation: art-hand 3.4s ease-in-out 3.1s infinite; }
+@keyframes art-hand { 0% { opacity: 0; transform: translate(112px, 140px); } 16%, 24% { opacity: 1; transform: translate(142px, 110px); } 46%, 70% { opacity: 1; transform: translate(176px, 127px); } 88%, 100% { opacity: 0; transform: translate(200px, 146px); } }
+.tour-next { list-style: none; margin: 2px 16px 14px; padding: 0; display: grid; gap: 9px; }
+.tour-next li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; }
+.tour-next b { display: block; font-weight: 600; }
+.tour-next li div span { font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+.tour-ico { width: 30px; height: 30px; display: grid; place-items: center; background: var(--board-2); border: 1px solid var(--edge); border-radius: 2px; }
+.help-tour { margin: 0 16px 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .tour-card, .tour-hole.is-gliding, .tour-veil { transition: none; }
+  .tour-card.is-center, .tour-cell.is-done { animation: none; }
+  .tour-card.is-done .tour-stamp { animation: none; opacity: 1; }
+  .art-floor, .art-wall, .art-window { animation: none; stroke-dashoffset: 0; fill-opacity: 1; }
+  .art-chair { animation: none; opacity: 1; }
+  .art-hand { animation: none; }
+}
+
 @media (max-width: 760px) {
+  .tour-card { left: 8px; right: 8px; top: 58px; width: auto; max-width: none; }
+  .tour-card.is-low { transform: none; }
+  .tour-card h2 { font-size: 21px; }
+  .tour-card p { font-size: 13px; margin-bottom: 8px; }
+  .tour-card.is-center { left: 8px; right: 8px; width: auto; transform: translateY(-50%); animation: none; }
+  .tour-card.is-center h2 { font-size: 25px; }
+  .tour-art { height: 128px; }
+
   :root { --gap: 8px; }
   .top .lang { display: none; }
   .tape { font-size: 17px; padding: 7px 10px 6px 13px; }

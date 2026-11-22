@@ -1,4 +1,4 @@
-// Снимки собранного приложения: node scripts/shots.mjs [имя] [--phone] [--eval "js"]
+// Снимки собранного приложения: node scripts/shots.mjs [имя] [--phone] [--tour] [--eval "js"]
 import { createRequire } from 'node:module'
 import { mkdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -19,6 +19,8 @@ const wait = waitIdx >= 0 ? Number(args[waitIdx + 1]) : 1500
 const { server, url } = await serve(join(ROOT, 'dist'))
 const browser = await chromium.launch({ args: GL_ARGS })
 const context = await browser.newContext(phone ? { viewport: { width: 400, height: 800 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 } : { viewport: { width: 1440, height: 860 }, deviceScaleFactor: 1 })
+// обучение предлагается при первом запуске; в обычных снимках оно мешает, поэтому показывается только с --tour
+if (!args.includes('--tour')) await context.addInitScript(() => { try { localStorage.setItem('maket.tour', 'done') } catch {} })
 const page = await context.newPage()
 const errors = []
 page.on('pageerror', (e) => errors.push(String(e)))
