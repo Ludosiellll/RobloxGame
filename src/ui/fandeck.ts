@@ -1,0 +1,109 @@
+// Веер образцов цвета: полоски расходятся от заклёпки, как на настоящей раскладке краски.
+
+import { tr, type Lang } from '../core/i18n'
+import { DECKS, findSwatch, isDark } from '../core/palette'
+import { h, ICON } from './dom'
+
+export interface FanRequest {
+  title: string
+  current: string
+  onPick: (hex: string) => void
+  onReset?: () => void
+}
+
+export class FanDeck {
+  readonly el: HTMLElement
+  private req: FanRequest | null = null
+  private deck = 0
+  private current = '#ffffff'
+
+  constructor(private readonly lang: () => Lang) {
+    this.el = h('section', { class: 'fan board', hidden: true })
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !this.el.hidden) this.close()
+    })
+  }
+
+  open(req: FanRequest): void {
+    this.req = req
+    this.current = req.current.toLowerCase()
+    const at = DECKS.findIndex((d) => d.swatches.some((w) => w.hex === this.current))
+    if (at >= 0) this.deck = at
+    this.el.hidden = false
+    this.render()
+  }
+
+  close(): void {
+    this.el.hidden = true
+    this.req = null
+  }
+
+  get isOpen(): boolean {
+    return !this.el.hidden
+  }
+
+  private pick(hex: string): void {
+    this.current = hex.toLowerCase()
+    this.req?.onPick(this.current)
+    this.render()
+  }
+
+  private render(): void {
+    const req = this.req
+    if (!req) return
+    const lang = this.lang()
+    const deck = DECKS[this.deck]
+    const n = deck.swatches.length
+    const spread = 106
+    const strips = deck.swatches.map((w, i) => {
+      const angle = -spread / 2 + (spread * i) / (n - 1)
+      const selected = w.hex === this.current
+      return h(
+        'button',
+        {
+          class: `strip${selected ? ' is-on' : ''}${isDark(w.hex) ? ' is-dark' : ''}`,
+          type: 'button',
+          title: `${lang === 'ru' ? w.ru : w.en} ${w.hex}`,
+          'aria-pressed': selected ? 'true' : 'false',
+          style: { background: w.hex, '--a': `${angle}deg`, zIndex: String(selected ? 40 : i) },
+          onclick: () => this.pick(w.hex),
+        },
+        h('span', { class: 'strip-name' }, lang === 'ru' ? w.ru : w.en),
+      )
+    })
+    const known = findSwatch(this.current)
+    const hexInput = h('input', {
+      class: 'hex',
+      id: 'fan-hex',
+      value: this.current,
+      maxLength: 7,
+      spellcheck: false,
+      'aria-label': 'HEX',
+      onchange: (e: Event) => {
+        const v = (e.target as HTMLInputElement).value.trim()
+        const hex = v.startsWith('#') ? v : `#${v}`
+        if (/^#[0-9a-fA-F]{6}$/.test(hex)) this.pick(hex)
+        else (e.target as HTMLInputElement).value = this.current
+      },
+    })
+    const native = h('input', { type: 'color', id: 'fan-native', class: 'native', value: this.current, 'aria-label': tr(lang, 'custom'), oninput: (e: Event) => this.pick((e.target as HTMLInputElement).value) })
+    this.el.replaceChildren(
+      h('header', { class: 'fan-head' }, h('div', { class: 'label' }, req.title), h('button', { class: 'icon-btn', type: 'button', 'aria-label': tr(lang, 'cancel'), html: ICON.close, onclick: () => this.close() })),
+      h(
+        'div',
+        { class: 'fan-tabs', role: 'tablist' },
+        ...DECKS.map((d, i) => h('button', { class: `fan-tab${i === this.deck ? ' is-on' : ''}`, type: 'button', onclick: () => ((this.deck = i), this.render()) }, lang === 'ru' ? d.ru : d.en)),
+      ),
+      h('div', { class: 'fan-stage' }, ...strips, h('span', { class: 'rivet' })),
+      h(
+        'div',
+        { class: 'fan-foot' },
+        h('span', { class: 'fan-chip', style: { background: this.current } }),
+        h('div', { class: 'fan-name' }, known ? (lang === 'ru' ? known.ru : known.en) : tr(lang, 'custom')),
+        hexInput,
+        h('label', { class: 'native-wrap', title: tr(lang, 'custom') }, native),
+        req.onReset ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => (req.onReset?.(), this.close()) }, tr(lang, 'resetColor')) : null,
+      ),
+    )
+  }
+}

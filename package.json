@@ -1,0 +1,26 @@
+{
+  "name": "maket",
+  "private": true,
+  "type": "module",
+  "description": "Макет — 3D-приложение для дизайна интерьера и архитектуры в браузере",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "thumbs": "node scripts/thumbs.mjs",
+    "shots": "node scripts/shots.mjs",
+    "artifact": "node scripts/artifact.mjs"
+  },
+  "dependencies": {
+    "fflate": "0.8.3",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/three": "0.187.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
+  }
+}
