@@ -1,12 +1,10 @@
 name: release
 # Собирает программу для Windows и выкладывает её в релиз v<версия из package.json>.
 # Новый выпуск — это новая версия в package.json: релиз с уже существующей версией не пересобирается.
+# Запускается на каждую отправку: если выпуск версии сорвался, следующая отправка с исправлением соберёт его снова.
 on:
   push:
     branches: [main]
-    paths:
-      - package.json
-      - .github/workflows/release.yml
   workflow_dispatch:
 permissions:
   contents: write
@@ -48,6 +46,19 @@ jobs:
       - run: npx electron-builder --win --x64 --publish never
       - name: Запустить собранную программу и проверить, что сцена загрузилась
         run: node scripts/desktop-check.mjs release/win-unpacked/Maket.exe release/windows-check.png
+      - name: Проверить запуск версии без установки
+        timeout-minutes: 6
+        run: node scripts/desktop-check.mjs release/Maket-Portable.exe release/portable-check.png
+      - name: Поставить программу установщиком и проверить запуск
+        timeout-minutes: 8
+        shell: pwsh
+        run: |
+          Start-Process -FilePath "release\Maket-Setup.exe" -ArgumentList "/S" -Wait
+          Get-Process Maket -ErrorAction SilentlyContinue | Stop-Process -Force
+          $exe = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter "Maket.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { Write-Output "::error::установщик не поставил программу"; exit 1 }
+          Write-Output "::notice::установлено в $($exe.FullName)"
+          node scripts/desktop-check.mjs $exe.FullName release/installed-check.png
       - run: ls -la release
       - name: Выложить релиз
         run: |

@@ -53,3 +53,12 @@ export function resolveSibling(names: string[], requested: string, mainFile: str
   if (!byBase.length) return null
   return byBase.find((n) => n.toLowerCase().startsWith(dir)) ?? byBase[0]
 }
+
+/** Ссылка из модели, для которой нет загруженного файла: наружу не ходим, подставляем пустышку. */
+export function offlineRef(url: string): string {
+  if (/^(data|blob):/i.test(url)) return url
+  const path = url.split(/[?#]/)[0]
+  // прозрачная точка 1×1: материал остаётся без рисунка, но загрузка не ломается
+  if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tga', 'ktx2'].includes(extOf(path))) return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+  return 'data:application/octet-stream;base64,'
+}

@@ -5,22 +5,23 @@ import { tx } from './db'
 interface Row {
   id: string
   blob: Blob
+  /** когда положили; у картинок из первых версий этого поля нет */
+  added?: number
 }
+
+const WEEK = 7 * 24 * 60 * 60 * 1000
 
 /** Картинки держим и в памяти: так подложка работает, даже когда хранилище браузера недоступно. */
 export class ImageStore {
   private readonly cache = new Map<string, Blob>()
 
+  /** Сохранить картинку под новым ключом. Запись в хранилище не держит интерфейс дольше полутора секунд. */
   async put(blob: Blob): Promise<string> {
     const id = `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
-    await this.adopt(id, blob)
-    return id
-  }
-
-  /** Сохранить картинку под готовым ключом (из файла проекта). */
-  async adopt(id: string, blob: Blob): Promise<void> {
     this.cache.set(id, blob)
-    await tx('images', 'readwrite', (s) => s.put({ id, blob } satisfies Row))
+    const written = tx('images', 'readwrite', (s) => s.put({ id, blob, added: Date.now() } satisfies Row))
+    await Promise.race([written, new Promise((r) => setTimeout(r, 1500))])
+    return id
   }
 
   async get(id: string): Promise<Blob | null> {
@@ -31,10 +32,16 @@ export class ImageStore {
     return row?.blob ?? null
   }
 
-  /** Убрать из хранилища картинки, на которые проект больше не ссылается (при запуске). */
-  async keepOnly(id: string | null): Promise<void> {
-    const keys = (await tx<IDBValidKey[]>('images', 'readonly', (s) => s.getAllKeys())) ?? []
-    for (const key of keys) if (key !== id) await tx('images', 'readwrite', (s) => s.delete(key))
+  /**
+   * Убрать из хранилища картинки, на которые проект не ссылается, если они старше maxAgeMs.
+   * Недавние оставляем: к ним может вернуть «Отменить» — здесь или в другой открытой вкладке.
+   */
+  async keepOnly(id: string | null, maxAgeMs = WEEK): Promise<void> {
+    const rows = (await tx<Row[]>('images', 'readonly', (s) => s.getAll())) ?? []
+    const now = Date.now()
+    for (const row of rows) {
+      if (row.id !== id && now - (row.added ?? now) >= maxAgeMs) await tx('images', 'readwrite', (s) => s.delete(row.id))
+    }
   }
 }
 

@@ -52,8 +52,12 @@ export class UnderlayView {
       this.group.visible = wanted && this.material.map !== null
       return
     }
+    // картинка сменилась: прежнюю убираем сразу, чтобы она не показалась вместо новой, если та не загрузится
     this.key = u.image
     this.group.visible = false
+    this.material.map?.dispose()
+    this.material.map = null
+    this.material.needsUpdate = true
     void this.show(u.image)
   }
 

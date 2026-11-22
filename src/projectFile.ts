@@ -1,7 +1,7 @@
 // Проект файлом: архив zip с описанием проекта и файлами своих моделей. Разбор описания — в core/projectFile.
 
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
-import { setUnderlay, type Doc } from './core/doc'
+import type { Doc } from './core/doc'
 import { PROJECT_MANIFEST, archivePath, buildManifest, imageFilePath, modelFilePath, parseManifest, type ProjectModel } from './core/projectFile'
 import type { FileSet } from './scene/importers'
 import type { UserModel } from './scene/models'
@@ -11,7 +11,7 @@ export interface OpenedProject {
   models: { meta: ProjectModel; files: FileSet }[]
   /** сколько моделей из описания не нашлось в архиве */
   missing: number
-  /** картинка плана квартиры, если она есть в проекте */
+  /** картинка плана квартиры, если она есть в архиве; сырая, из недоверенного файла */
   image: { id: string; blob: Blob } | null
 }
 
@@ -64,10 +64,8 @@ export async function readProject(file: Blob): Promise<OpenResult> {
     if (files.size === meta.files.length) models.push({ meta, files })
     else missing++
   }
-  // план квартиры без картинки в архиве не открываем: показывать было бы нечего
   const plan = parsed.doc.scene.underlay
   const planBytes = plan ? entries[imageFilePath(plan.image)] : undefined
-  const image = plan && planBytes ? { id: plan.image, blob: new Blob([planBytes as BlobPart], { type: 'image/webp' }) } : null
-  const doc = plan && !image ? setUnderlay(parsed.doc, null) : parsed.doc
-  return { ok: true, project: { doc, models, missing, image } }
+  const image = plan && planBytes ? { id: plan.image, blob: new Blob([planBytes as BlobPart]) } : null
+  return { ok: true, project: { doc: parsed.doc, models, missing, image } }
 }

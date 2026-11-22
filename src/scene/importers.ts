@@ -12,7 +12,7 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js'
 import { PLYLoader } from 'three/addons/loaders/PLYLoader.js'
 import { ColladaLoader } from 'three/addons/loaders/ColladaLoader.js'
 import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js'
-import { extOf, isArchive, pickMainFile, resolveSibling } from '../core/importPick'
+import { offlineRef, extOf, isArchive, pickMainFile, resolveSibling } from '../core/importPick'
 
 export type FileSet = Map<string, Blob>
 
@@ -73,7 +73,8 @@ export async function loadFromFiles(set: FileSet, main?: string): Promise<{ obje
     if (url.startsWith('data:')) return url
     const clean = url.replace(/^blob:[^/]*\/\/[^/]+\//, '').replace(/^blob:/, '')
     const hit = resolveSibling(names, clean, mainName)
-    if (!hit) return url
+    // файла среди загруженных нет: наружу не ходим — модель из чужого архива не должна обращаться к сайтам
+    if (!hit) return offlineRef(clean)
     const u = URL.createObjectURL(set.get(hit)!)
     urls.push(u)
     return u

@@ -28,7 +28,7 @@
     "vite": "8.3.8",
     "vitest": "5.1.1"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "productName": "Maket",
   "author": "Maket",
   "main": "desktop/main.cjs",

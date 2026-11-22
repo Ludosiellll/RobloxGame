@@ -48,4 +48,27 @@ describe('History', () => {
     while (h.undo() !== null) steps++
     expect(steps).toBe(3)
   })
+
+  it('amend replaces the present state without touching undo or redo', () => {
+    const h = new History('a')
+    h.set('b')
+    h.set('c')
+    h.undo()
+    h.amend('b2')
+    expect(h.present).toBe('b2')
+    expect(h.canRedo).toBe(true)
+    expect(h.redo()).toBe('c')
+    expect(h.undo()).toBe('b2')
+    expect(h.undo()).toBe('a')
+    expect(h.undo()).toBe(null)
+  })
+
+  it('amend in the middle of a drag keeps the drag as one undo step from its start', () => {
+    const h = new History('a')
+    h.set('a1', true)
+    h.amend('a2')
+    h.seal()
+    expect(h.present).toBe('a2')
+    expect(h.undo()).toBe('a')
+  })
 })

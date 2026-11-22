@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extOf, isArchive, isImageFile, isModelFile, pickMainFile, resolveSibling, titleFromFile } from '../src/core/importPick'
+import { extOf, isArchive, isImageFile, isModelFile, offlineRef, pickMainFile, resolveSibling, titleFromFile } from '../src/core/importPick'
 
 describe('import file picking', () => {
   it('reads extensions case-insensitively', () => {
@@ -50,5 +50,14 @@ describe('import file picking', () => {
     expect(isImageFile('plan.webp')).toBe(true)
     expect(isImageFile('chair.glb')).toBe(false)
     expect(isImageFile('plan.pdf')).toBe(false)
+  })
+
+  it('ссылки модели наружу не запрашиваются: вместо картинки — пустая картинка, вместо прочего — пустые данные', () => {
+    expect(offlineRef('data:image/png;base64,AAAA')).toBe('data:image/png;base64,AAAA')
+    expect(offlineRef('blob:http://localhost/abc')).toBe('blob:http://localhost/abc')
+    expect(offlineRef('https://tracker.example/wood.PNG?x=1')).toMatch(/^data:image\/png;base64,/)
+    expect(offlineRef('//cdn.example/tex.jpg')).toMatch(/^data:image\/png;base64,/)
+    expect(offlineRef('http://example.com/scene.bin')).toBe('data:application/octet-stream;base64,')
+    expect(offlineRef('textures/missing.webp')).toMatch(/^data:image\/png;base64,/)
   })
 })

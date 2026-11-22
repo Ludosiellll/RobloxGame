@@ -1,9 +1,10 @@
 // Интерфейс: верхняя панель, каталог, панель свойств, сообщения, приём файлов.
 
 import { CATEGORIES, KIT, KIT_BY_KEY, KIT_THUMB, SLOT_NAMES, type CatId } from '../core/catalog'
-import { addRoom, defaultDoc, LIMITS, setItemColor, setLight, setScene, setUnderlay, setWalls, updateItem, updateOpening, updateRoom, updateUnderlay, type Doc, type FloorKind, type Item, type MatKind } from '../core/doc'
+import { addRoom, defaultDoc, dropItems, LIMITS, setItemColor, setLight, setScene, setUnderlay, setWalls, updateItem, updateOpening, updateRoom, updateUnderlay, type Doc, type FloorKind, type Item, type MatKind } from '../core/doc'
 import { fmt, tr, type TextKey } from '../core/i18n'
 import { isArchive, isImageFile } from '../core/importPick'
+import { isOrphan } from '../core/orphans'
 import { projectFileName } from '../core/projectFile'
 import { starterDoc } from '../core/starter'
 import { calibrate, defaultUnderlay, underlaySize } from '../core/underlay'
@@ -325,14 +326,28 @@ export class Ui {
 
   private async openProject(project: OpenedProject): Promise<void> {
     const { store, userModels, toaster, stage } = this.d
-    const failed = (await userModels.adopt(project.models)) + project.missing
-    if (project.image) await this.d.images.adopt(project.image.id, project.image.blob)
+    let failed = (await userModels.adopt(project.models)) + project.missing
+    let doc = project.doc
+    // картинка плана пришла из чужого файла: уменьшаем её как обычную и кладём под своим ключом
+    const plan = doc.scene.underlay
+    if (plan) {
+      const prepared = project.image ? await prepareImage(project.image.blob) : null
+      if (prepared) doc = setUnderlay(doc, { ...plan, image: await this.d.images.put(prepared.blob), ratio: prepared.ratio })
+      else {
+        doc = setUnderlay(doc, null)
+        failed++
+      }
+    }
+    // предметы, для которых в файле не нашлось модели, в проект не попадают
+    const known = { kit: (key: string) => KIT_BY_KEY.has(key), user: (key: string) => userModels.list.some((m) => m.id === key), userReady: true }
+    const kept = dropItems(doc, (i) => isOrphan(i.src, known))
+    failed += doc.items.length - kept.items.length
     store.select(null)
     // обычная правка, а не новый проект: «Отменить» вернёт прежний
-    store.update(() => project.doc)
+    store.update(() => kept)
     stage.setView('3d')
     this.renderTray()
-    if (failed) toaster.show(this.t('projectOpenedPartly', { n: failed }), 'error')
+    if (failed) toaster.show(this.t('projectOpenedPartly'), 'error')
     else toaster.show(this.t('projectOpened'))
   }
 

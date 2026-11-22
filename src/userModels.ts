@@ -23,13 +23,19 @@ export type ImportResult = { added: UserModel[]; errors: ImportError['code'][] }
 
 export class UserModels {
   list: (UserModel & { added: number })[] = []
+  /** Прочитаны ли свои модели из хранилища. Пока нет (или оно недоступно), о пропавших моделях судить нельзя. */
+  state: 'pending' | 'ok' | 'failed' = 'pending'
   onChange: () => void = () => {}
 
   constructor(private readonly models: ModelLibrary) {}
 
   /** Вернуть модели, сохранённые в прошлый раз. */
   async restore(): Promise<void> {
-    const rows = (await tx<Row[]>(STORE, 'readonly', (s) => s.getAll())) ?? []
+    const rows = await tx<Row[]>(STORE, 'readonly', (s) => s.getAll())
+    if (rows === null) {
+      this.state = 'failed'
+      return
+    }
     rows.sort((a, b) => a.added - b.added)
     for (const r of rows) {
       const files: FileSet = new Map(r.files.map((f) => [f.name, f.blob]))
@@ -37,6 +43,7 @@ export class UserModels {
       this.list.push(model)
       this.models.registerUser(model)
     }
+    this.state = 'ok'
     this.onChange()
   }
 

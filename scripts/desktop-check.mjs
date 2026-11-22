@@ -41,6 +41,7 @@ child.on('exit', () => {
     if (st.loaded !== st.items) problems.push(`загружено моделей ${st.loaded} из ${st.items}`)
     if (!(st.fonts >= 6)) problems.push(`загружено шрифтов ${st.fonts}`)
     if (!st.db.includes('maket-db')) problems.push('хранилище моделей не открылось')
+    if (st.contextLost) problems.push('графика не работает: контекст потерян и не восстановился')
   }
   if (!existsSync(shot) || statSync(shot).size < 20000) problems.push('снимок окна пустой')
   // на GitHub результат попадает в заметки к запуску — их видно без входа в аккаунт

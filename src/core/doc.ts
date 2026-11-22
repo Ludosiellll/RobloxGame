@@ -116,6 +116,12 @@ export function removeItem(doc: Doc, id: string): Doc {
   return { ...doc, items: doc.items.filter((i) => i.id !== id) }
 }
 
+/** Убрать предметы, для которых drop возвращает true. Если убирать нечего — возвращается тот же документ. */
+export function dropItems(doc: Doc, drop: (item: Item) => boolean): Doc {
+  const items = doc.items.filter((i) => !drop(i))
+  return items.length === doc.items.length ? doc : { ...doc, items }
+}
+
 export function duplicateItem(doc: Doc, id: string, newId: string, offset = 0.4): Doc {
   const src = doc.items.find((i) => i.id === id)
   if (!src) return doc

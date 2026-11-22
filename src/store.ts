@@ -99,6 +99,16 @@ export class Store {
     this.emit('doc')
   }
 
+  /** Поправить проект, не делая из этого шага отмены (например, убрать предметы, оставшиеся без модели). */
+  amend(fn: (d: Doc) => Doc): void {
+    const next = fn(this.doc)
+    if (next === this.doc) return
+    this.history.amend(next)
+    this.fixSelection()
+    this.emit('doc')
+    this.scheduleSave()
+  }
+
   undo(): void {
     if (this.history.undo() === null) return
     this.fixSelection()

@@ -60,6 +60,11 @@ export class History<T> {
     return next
   }
 
+  /** Поправить текущее состояние, не делая из этого шага истории: отмена и повтор остаются как были. */
+  amend(value: T): void {
+    this.cur = value
+  }
+
   /** Заменить всё (открыт другой проект): история очищается. */
   reset(value: T): void {
     this.past = []

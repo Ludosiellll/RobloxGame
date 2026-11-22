@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync, mkdtempSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { zipSync } from 'fflate'
+import { unzipSync, zipSync } from 'fflate'
 import { serve, GL_ARGS } from './serve.mjs'
 
 const require = createRequire(import.meta.url)
@@ -254,7 +254,7 @@ await page.click('#select-plan')
 await page.click('#plan-remove')
 await page.waitForTimeout(300)
 check('план убирается', (await planOf()) === null && !(await page.evaluate(() => window.__maket.underlay.shown)))
-await page.evaluate(() => window.__maket.images.keepOnly(null))
+await page.evaluate(() => window.__maket.images.keepOnly(null, 0))
 await page.setInputFiles('#project-file', planProject)
 await page.waitForFunction(() => window.__maket.underlay.ready, null, { timeout: 15000 }).catch(() => {})
 const reopened = await planOf()
@@ -279,6 +279,87 @@ await page.click('#select-plan')
 await page.click('#plan-remove')
 await page.evaluate(() => window.__maket.stage.setView('3d', true))
 await page.waitForTimeout(800)
+
+// 9г. находки проверки кода: потеря данных и недоверенные файлы
+const ghostCount = (pg) => pg.evaluate(() => window.__maket.items.pickables().filter((g) => g.children.some((c) => c.userData.ghost)).length)
+const imageRows = () => page.evaluate(() => new Promise((res) => { const r = indexedDB.open('maket-db'); r.onsuccess = () => { const q = r.result.transaction('images').objectStore('images').count(); q.onsuccess = () => { r.result.close(); res(q.result) } } }))
+// хранилище браузера отвечает позже, чем приложение успевает запуститься (или не отвечает вовсе)
+const slowStorage = (ms) => `(() => { const real = IDBFactory.prototype.open; IDBFactory.prototype.open = function (...a) { const fake = { result: null, error: null, onsuccess: null, onerror: null, onupgradeneeded: null }; const go = () => { const r = real.apply(this, a); r.onupgradeneeded = () => { fake.result = r.result; fake.onupgradeneeded && fake.onupgradeneeded() }; r.onsuccess = () => { fake.result = r.result; fake.onsuccess && fake.onsuccess() }; r.onerror = () => { fake.error = r.error; fake.onerror && fake.onerror() } }; ${Number.isFinite(ms) ? `setTimeout(go, ${ms})` : ''}; return fake } })()`
+await page.waitForTimeout(700)
+const steady = await state()
+const slow = await context.newPage()
+await slow.addInitScript({ content: slowStorage(4500) })
+await slow.goto(url)
+await slow.waitForFunction(() => window.__maket, null, { timeout: 20000 })
+await slow.waitForTimeout(6500)
+const slowState = await slow.evaluate(() => { const m = window.__maket; return { items: m.store.doc.items.length, user: m.userModels.list.length } })
+check('медленное хранилище: предметы со своими моделями не пропадают', slowState.items === steady.items && slowState.user === 2 && (await ghostCount(slow)) === 0, JSON.stringify({ было: steady.items, стало: slowState.items, моделей: slowState.user, заготовок: await ghostCount(slow) }))
+await slow.close()
+const hung = await context.newPage()
+await hung.addInitScript({ content: slowStorage(Infinity) })
+await hung.goto(url)
+await hung.waitForFunction(() => window.__maket, null, { timeout: 20000 })
+await hung.setInputFiles('#plan-file', join(ROOT, 'tests/fixtures/plan.png'))
+const hungShown = await hung.waitForFunction(() => window.__maket.underlay.shown, null, { timeout: 6000 }).then(() => true, () => false)
+const hungItems = await hung.evaluate(() => window.__maket.store.doc.items.length)
+check('хранилище не отвечает: план всё равно ложится на коврик, предметы целы', hungShown && hungItems === steady.items, JSON.stringify({ план: hungShown, предметов: hungItems }))
+await hung.evaluate(() => window.__maket.store.update((d) => ({ ...d, scene: { ...d.scene, underlay: null } })))
+await hung.waitForTimeout(700)
+await hung.close()
+
+// проект, в котором нет файла одной из моделей: её предметы отбрасываются, а «Отменить» возвращает прежний проект целиком
+const saved = unzipSync(new Uint8Array(readFileSync(projectPath)))
+const savedManifest = JSON.parse(new TextDecoder().decode(saved['maket.json']))
+const victim = savedManifest.models[0].id
+writeFileSync(join(tmp, 'project-broken.zip'), zipSync(Object.fromEntries(Object.entries(saved).filter(([name]) => !name.startsWith(`models/${victim}/`)))))
+// модель удаляем так же, как это делает кнопка в каталоге: сначала её предметы, потом саму модель
+await page.evaluate((id) => { const m = window.__maket; m.store.update((d) => ({ ...d, items: d.items.filter((i) => !(i.src.kind === 'user' && i.src.key === id)) })); m.userModels.remove(id) }, victim)
+await page.waitForTimeout(400)
+const beforeBroken = await state()
+await page.setInputFiles('#project-file', join(tmp, 'project-broken.zip'))
+await page.waitForTimeout(1500)
+const afterBroken = await state()
+const lostInFile = savedManifest.doc.items.filter((i) => i.src.kind === 'user' && i.src.key === victim).length
+const brokenToast = await page.textContent('.toast.is-error').catch(() => '')
+check('проект без файла модели открывается без её предметов и говорит об этом', afterBroken.items === savedManifest.doc.items.length - lostInFile && lostInFile > 0 && brokenToast.includes('не прочитались'), JSON.stringify({ items: afterBroken.items, toast: brokenToast }))
+await page.keyboard.press('Control+z')
+check('после такого открытия «Отменить» возвращает прежний проект целиком', (await state()).items === beforeBroken.items, `${(await state()).items} из ${beforeBroken.items}`)
+await page.keyboard.press('Control+Shift+z')
+check('и «Вернуть» снова открывает проект из файла', (await state()).items === afterBroken.items)
+
+// картинка плана из чужого файла проекта уменьшается и получает свой ключ
+const kitOnly = { ...savedManifest.doc, items: savedManifest.doc.items.filter((i) => i.src.kind === 'kit'), scene: { mat: 'green', underlay: { image: 'bigplan', x: 0, z: 0, w: 10, ratio: 0.5, rot: 0, opacity: 0.6 } } }
+writeFileSync(join(tmp, 'project-bigplan.zip'), zipSync({ 'maket.json': new TextEncoder().encode(JSON.stringify({ app: 'maket', format: 1, doc: kitOnly, models: [] })), 'images/bigplan': new Uint8Array(readFileSync(join(ROOT, 'tests/fixtures/plan-big.png'))) }))
+await page.setInputFiles('#project-file', join(tmp, 'project-bigplan.zip'))
+await page.waitForFunction(() => window.__maket.underlay.ready, null, { timeout: 15000 }).catch(() => {})
+const bigPlan = await page.evaluate(() => { const m = window.__maket; return { key: m.store.doc.scene.underlay?.image, width: m.underlay.material.map?.image.width ?? 0 } })
+check('картинка плана из файла проекта уменьшается до 2048 точек и хранится под своим ключом', bigPlan.width > 0 && bigPlan.width <= 2048 && bigPlan.key !== 'bigplan', JSON.stringify(bigPlan))
+// план ссылается на картинку, которой нет: прежняя картинка не должна показываться вместо неё
+await page.evaluate(() => window.__maket.store.update((d) => ({ ...d, scene: { ...d.scene, underlay: { ...d.scene.underlay, image: 'net-takoy' } } })))
+await page.waitForTimeout(600)
+const dangling = await page.evaluate(() => { const m = window.__maket; return { ready: m.underlay.ready, map: m.underlay.material.map !== null } })
+check('если картинки плана нет, прежняя не показывается вместо неё', !dangling.ready && !dangling.map, JSON.stringify(dangling))
+await page.evaluate(() => window.__maket.store.update((d) => ({ ...d, scene: { ...d.scene, underlay: null } })))
+await page.waitForTimeout(700)
+// недавние картинки планов не удаляются при запуске: их может ждать отмена в другой вкладке
+const rowsBefore = await imageRows()
+await page.reload()
+await page.waitForFunction(() => window.__maket, null, { timeout: 20000 })
+await page.waitForTimeout(1500)
+check('недавние картинки планов при запуске не удаляются', rowsBefore > 0 && (await imageRows()) === rowsBefore, `${rowsBefore} → ${await imageRows()}`)
+
+// модель со ссылкой на чужой сайт: наружу приложение не ходит
+const outside = []
+page.on('request', (r) => { if (r.url().includes('tracker.invalid')) outside.push(r.url()) })
+const tri = Buffer.concat([Buffer.from(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]).buffer), Buffer.from(new Float32Array([0, 0, 1, 0, 0, 1]).buffer)])
+writeFileSync(join(tmp, 'phone-home.gltf'), JSON.stringify({ asset: { version: '2.0' }, scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0 }], meshes: [{ primitives: [{ attributes: { POSITION: 0, TEXCOORD_0: 1 }, material: 0 }] }], materials: [{ pbrMetallicRoughness: { baseColorTexture: { index: 0 } } }], textures: [{ source: 0 }], images: [{ uri: 'https://tracker.invalid/t.png' }], buffers: [{ byteLength: 60, uri: 'data:application/octet-stream;base64,' + tri.toString('base64') }], bufferViews: [{ buffer: 0, byteOffset: 0, byteLength: 36 }, { buffer: 0, byteOffset: 36, byteLength: 24 }], accessors: [{ bufferView: 0, componentType: 5126, count: 3, type: 'VEC3', min: [0, 0, 0], max: [1, 1, 0] }, { bufferView: 1, componentType: 5126, count: 3, type: 'VEC2' }] }))
+const usersBefore = (await state()).user
+await page.setInputFiles('#model-file', join(tmp, 'phone-home.gltf'))
+await page.waitForFunction((n) => window.__maket.userModels.list.length === n + 1, usersBefore, { timeout: 15000 }).catch(() => {})
+await page.waitForTimeout(800)
+check('модель со ссылкой на чужой сайт импортируется, а наружу запросов нет', (await state()).user === usersBefore + 1 && outside.length === 0, JSON.stringify({ user: (await state()).user, outside }))
+await page.evaluate(() => { const m = window.__maket; const last = m.userModels.list[m.userModels.list.length - 1]; m.userModels.remove(last.id) })
+await page.waitForTimeout(500)
 
 // 10. сброс видеокарты (сон, смена драйвера): сцена должна нарисоваться заново и выглядеть так же
 const stageLook = async () => {

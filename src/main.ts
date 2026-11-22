@@ -7,6 +7,8 @@ import { ModelLibrary } from './scene/models'
 import { Interact } from './scene/interact'
 import { UnderlayView } from './scene/underlay'
 import { ImageStore } from './images'
+import { dropItems } from './core/doc'
+import { isOrphan, type ModelsKnown } from './core/orphans'
 import { underlaySize } from './core/underlay'
 import { Store } from './store'
 import { UserModels } from './userModels'
@@ -18,8 +20,17 @@ async function start(): Promise<void> {
   const stage = new Stage(document.getElementById('stage')!)
   const models = new ModelLibrary()
   const userModels = new UserModels(models)
-  // сначала возвращаем сохранённые модели пользователя, чтобы проект нашёл их при открытии
-  await Promise.race([userModels.restore(), new Promise((r) => setTimeout(r, 2500))])
+  // сначала возвращаем сохранённые модели пользователя, чтобы проект нашёл их при открытии;
+  // если хранилище отвечает долго, запускаемся без них и дочитываем позже
+  const restoring = userModels.restore()
+  const restoredInTime = await Promise.race([restoring.then(() => true), new Promise<boolean>((r) => setTimeout(() => r(false), 2500))])
+  const known: ModelsKnown = {
+    kit: (key) => models.has({ kind: 'kit', key }),
+    user: (key) => models.has({ kind: 'user', key }),
+    get userReady() {
+      return userModels.state === 'ok'
+    },
+  }
 
   const images = new ImageStore()
   const underlay = new UnderlayView(stage, (id) => images.get(id))
@@ -36,11 +47,11 @@ async function start(): Promise<void> {
   let boundsKey = ''
   const render = (): void => {
     const doc = store.doc
-    // предметы с удалённой моделью пользователя убираем из проекта
-    const missing = doc.items.filter((i) => !models.has(i.src))
-    if (missing.length) {
-      store.update((d) => ({ ...d, items: d.items.filter((i) => models.has(i.src)) }), true)
-      store.commit()
+    // предметы, оставшиеся без модели, убираем из проекта — поправкой, а не шагом истории,
+    // чтобы «Отменить» и «Вернуть» работали как раньше; пока свои модели не прочитаны, их предметы не трогаем
+    const cleaned = dropItems(doc, (i) => isOrphan(i.src, known))
+    if (cleaned !== doc) {
+      store.amend(() => cleaned)
       return
     }
     stage.setMat(doc.scene.mat)
@@ -73,9 +84,16 @@ async function start(): Promise<void> {
   stage.onView(showPlan)
   render()
   stage.setView('3d', true)
+  // свои модели дочитались уже после запуска: показать их предметы
+  if (!restoredInTime) {
+    void restoring.then(() => {
+      items.reload((srcKey) => srcKey.startsWith('user:'))
+      render()
+    })
+  }
 
   const ui = new Ui(uiRoot, { store, stage, interact, items, rooms, userModels, images, toaster })
-  // картинки планов, на которые проект уже не ссылается, из хранилища убираем
+  // старые картинки планов, на которые проект уже не ссылается, из хранилища убираем
   void images.keepOnly(store.doc.scene.underlay?.image ?? null)
   document.documentElement.lang = store.lang
   store.on((c) => c === 'lang' && (document.documentElement.lang = store.lang))

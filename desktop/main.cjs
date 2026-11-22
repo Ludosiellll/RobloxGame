@@ -31,7 +31,7 @@ function serve() {
     let rel = decodeURIComponent(url.pathname)
     if (rel === '/' || rel === '') rel = '/index.html'
     const file = path.normalize(path.join(DIST, rel))
-    if (!file.startsWith(DIST)) return new Response('forbidden', { status: 403 })
+    if (file !== DIST && !file.startsWith(DIST + path.sep)) return new Response('forbidden', { status: 403 })
     try {
       const data = await fs.promises.readFile(file)
       return new Response(data, { headers: { 'content-type': TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream' } })
