@@ -41,6 +41,22 @@ export interface Opening {
   width: number
 }
 
+/** Картинка плана квартиры, лежащая на коврике под комнатами. */
+export interface Underlay {
+  /** ключ картинки в хранилище */
+  image: string
+  /** центр на коврике, м */
+  x: number
+  z: number
+  /** ширина картинки в метрах — это и есть масштаб */
+  w: number
+  /** высота картинки, делённая на ширину */
+  ratio: number
+  /** поворот шагами по 90° */
+  rot: number
+  opacity: number
+}
+
 export interface Doc {
   v: 1
   rooms: Room[]
@@ -48,11 +64,11 @@ export interface Doc {
   openings: Opening[]
   /** время суток 0..1: 0 — утро, 0.5 — полдень, 1 — поздний вечер */
   light: { time: number }
-  scene: { mat: MatKind }
+  scene: { mat: MatKind; underlay: Underlay | null }
   items: Item[]
 }
 
-export const LIMITS = { roomMin: 1.2, roomMax: 14, hMin: 2.2, hMax: 4, scaleMin: 0.1, scaleMax: 5, liftMax: 4, openMin: 0.5, openMax: 3 }
+export const LIMITS = { roomMin: 1.2, roomMax: 14, hMin: 2.2, hMax: 4, scaleMin: 0.1, scaleMax: 5, liftMax: 4, openMin: 0.5, openMax: 3, underMin: 1, underMax: 80 }
 const FLOOR_KINDS: FloorKind[] = ['planks', 'tile', 'plain', 'carpet']
 const MAT_KINDS: MatKind[] = ['green', 'graphite', 'blue', 'sand']
 const DEFAULT_FLOOR = { kind: 'planks' as FloorKind, color: '#c79a6b' }
@@ -64,7 +80,7 @@ export function defaultDoc(): Doc {
     walls: { h: 2.7, color: '#f1f0ea' },
     openings: [],
     light: { time: 0.42 },
-    scene: { mat: 'green' },
+    scene: { mat: 'green', underlay: null },
     items: [],
   }
 }
@@ -178,7 +194,41 @@ export function removeOpening(doc: Doc, id: string): Doc {
 }
 
 export function setScene(doc: Doc, patch: { mat?: MatKind }): Doc {
-  return { ...doc, scene: { mat: patch.mat && MAT_KINDS.includes(patch.mat) ? patch.mat : doc.scene.mat } }
+  return { ...doc, scene: { ...doc.scene, mat: patch.mat && MAT_KINDS.includes(patch.mat) ? patch.mat : doc.scene.mat } }
+}
+
+const isImageKey = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v)
+
+function cleanUnderlay(u: Underlay): Underlay {
+  return {
+    image: u.image,
+    x: r3(clamp(u.x, -60, 60)),
+    z: r3(clamp(u.z, -60, 60)),
+    w: r3(clamp(u.w, LIMITS.underMin, LIMITS.underMax)),
+    ratio: clamp(u.ratio, 0.05, 20),
+    rot: normDeg(Math.round(u.rot / 90) * 90),
+    opacity: r2(clamp(u.opacity, 0.1, 1)),
+  }
+}
+
+export function setUnderlay(doc: Doc, underlay: Underlay | null): Doc {
+  return { ...doc, scene: { ...doc.scene, underlay: underlay ? cleanUnderlay(underlay) : null } }
+}
+
+export function updateUnderlay(doc: Doc, patch: Partial<Omit<Underlay, 'image' | 'ratio'>>): Doc {
+  const u = doc.scene.underlay
+  if (!u) return doc
+  return { ...doc, scene: { ...doc.scene, underlay: cleanUnderlay({ ...u, ...patch }) } }
+}
+
+function readUnderlay(raw: unknown): Underlay | null {
+  if (!raw || typeof raw !== 'object') return null
+  const o = raw as Record<string, unknown>
+  if (!isImageKey(o.image)) return null
+  const nums = [o.x, o.z, o.w, o.ratio, o.rot, o.opacity]
+  if (!nums.every((v) => typeof v === 'number' && Number.isFinite(v))) return null
+  const [x, z, w, ratio, rot, opacity] = nums as number[]
+  return cleanUnderlay({ image: o.image, x, z, w, ratio, rot, opacity })
 }
 
 export function setLight(doc: Doc, time: number): Doc {
@@ -248,7 +298,7 @@ export function sanitizeDoc(raw: unknown): Doc {
     walls: { h: clamp(num(walls.h, base.walls.h), LIMITS.hMin, LIMITS.hMax), color: isHex(walls.color) ? walls.color : base.walls.color },
     openings,
     light: { time: clamp(num(light.time, base.light.time), 0, 1) },
-    scene: { mat: MAT_KINDS.includes(scene.mat as MatKind) ? (scene.mat as MatKind) : base.scene.mat },
+    scene: { mat: MAT_KINDS.includes(scene.mat as MatKind) ? (scene.mat as MatKind) : base.scene.mat, underlay: readUnderlay(scene.underlay) },
     items,
   }
 }

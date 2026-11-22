@@ -4,13 +4,15 @@ import * as THREE from 'three'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js'
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
-import { addItem, addOpening, duplicateItem, LIMITS, removeItem, removeOpening, removeRoom, updateItem, updateOpening, updateRoom, type Doc, type ItemSrc, type Room } from '../core/doc'
+import { addItem, addOpening, duplicateItem, LIMITS, removeItem, removeOpening, removeRoom, setUnderlay, updateItem, updateOpening, updateRoom, updateUnderlay, type Doc, type ItemSrc, type Room } from '../core/doc'
 import { clampToRoom, footprint, snap, wallSnap } from '../core/geom'
 import { fmt, tr } from '../core/i18n'
+import { underlayContains, underlaySize } from '../core/underlay'
 import { roomAt, snapOpening } from '../core/walls'
 import type { Store } from '../store'
 import { WALL_T, type RoomsView } from './rooms'
 import type { Stage } from './stage'
+import { UNDERLAY_Y } from './underlay'
 import { itemIdOf, type ItemsView } from './view'
 
 const YELLOW = '#f4c430'
@@ -22,6 +24,9 @@ type Drag =
   | { kind: 'opening'; id: string; moved: boolean }
   | { kind: 'roomMove'; id: string; px: number; pz: number; room: Room; items: { id: string; x: number; z: number }[]; openings: { id: string; x: number; z: number }[]; moved: boolean }
   | { kind: 'roomEdge'; id: string; edge: Edge; moved: boolean }
+  | { kind: 'underlay'; ox: number; oz: number; moved: boolean }
+
+type P = { x: number; z: number }
 
 export class Interact {
   private drag: Drag | null = null
@@ -31,6 +36,12 @@ export class Interact {
   private readonly handles = new THREE.Group()
   private readonly tags: HTMLElement[] = []
   private pointerId: number | null = null
+  /** масштаб плана по двум точкам: пока идёт, щелчки ставят точки */
+  private calib: { points: P[] } | null = null
+  private readonly calibLine: LineSegments2
+  private readonly calibDots: THREE.Mesh[] = []
+  /** вызывается, когда меняется состояние разметки масштаба */
+  onCalibration: () => void = () => {}
 
   constructor(
     private readonly stage: Stage,
@@ -44,8 +55,20 @@ export class Interact {
     this.outline.renderOrder = 20
     this.outline.visible = false
     this.outline.frustumCulled = false
-    stage.overlay.add(this.outline, this.handles)
+    this.calibLine = new LineSegments2(new LineSegmentsGeometry(), this.lineMat)
+    this.calibLine.renderOrder = 22
+    this.calibLine.visible = false
+    this.calibLine.frustumCulled = false
+    stage.overlay.add(this.outline, this.handles, this.calibLine)
     const handleMat = new THREE.MeshBasicMaterial({ color: YELLOW, depthTest: false, toneMapped: false })
+    const dot = new THREE.CylinderGeometry(0.5, 0.5, 0.02, 20)
+    for (let i = 0; i < 2; i++) {
+      const m = new THREE.Mesh(dot, handleMat)
+      m.renderOrder = 23
+      m.visible = false
+      this.calibDots.push(m)
+      stage.overlay.add(m)
+    }
     const bar = new THREE.BoxGeometry(1, 0.05, 0.28)
     for (const edge of ['n', 's', 'w', 'e'] as Edge[]) {
       const m = new THREE.Mesh(bar, handleMat)
@@ -68,6 +91,7 @@ export class Interact {
     el.addEventListener('contextmenu', (e) => e.preventDefault())
     stage.onFrame(() => this.refreshOverlay())
     store.on(() => {
+      if (this.calib && this.store.selection?.kind !== 'underlay') this.stopCalibration()
       this.rebuildOutline()
       stage.invalidate()
     })
@@ -117,6 +141,17 @@ export class Interact {
       }
     }
 
+    // пока размечается масштаб, щелчки ставят точки, а перетаскивание двигает камеру
+    if (this.calib) return
+    const under = this.store.doc.scene.underlay
+    if (sel?.kind === 'underlay' && under) {
+      const p = this.floorPoint(e, UNDERLAY_Y)
+      if (p && underlayContains(under, p)) {
+        this.drag = { kind: 'underlay', ox: under.x - p.x, oz: under.z - p.z, moved: false }
+        return this.capture(e)
+      }
+    }
+
     const hits = rc.intersectObjects([...this.items.pickables(), ...this.rooms.openingTargets], true)
     const first = hits.find((h) => itemIdOf(h.object) || h.object.userData.openingId)
     if (first) {
@@ -150,7 +185,8 @@ export class Interact {
     if (d.kind === 'item') this.dragItem(d, e)
     else if (d.kind === 'opening') this.dragOpening(d, e)
     else if (d.kind === 'roomMove') this.dragRoom(d, e)
-    else this.dragEdge(d, e)
+    else if (d.kind === 'roomEdge') this.dragEdge(d, e)
+    else this.dragUnderlay(d, e)
   }
 
   private onUp(e: PointerEvent): void {
@@ -162,6 +198,8 @@ export class Interact {
       this.stage.controls.enabled = true
       if (d.moved || (d.kind === 'item' && d.fresh)) this.store.commit()
       this.down = null
+      // по плану щёлкнули, а не потащили его: выбрать то, что под указателем
+      if (d.kind === 'underlay' && !d.moved) this.pickAt(e)
       return
     }
     // щелчок по пустому месту: выбрать комнату под указателем или снять выделение
@@ -169,9 +207,67 @@ export class Interact {
     const moved = Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y)
     this.down = null
     if (moved > 5) return
-    const hit = this.cast(e).intersectObjects(this.rooms.floors, false)[0]
-    const roomId = hit?.object.userData.roomId as string | undefined
-    this.store.select(roomId ? { kind: 'room', id: roomId } : null)
+    if (this.calib) {
+      const p = this.floorPoint(e, UNDERLAY_Y)
+      if (p) this.addCalibrationPoint({ x: p.x, z: p.z })
+      return
+    }
+    this.pickAt(e)
+  }
+
+  /** Выбрать то, что под указателем: предмет или проём, затем комнату, затем план квартиры. */
+  private pickAt(e: { clientX: number; clientY: number }): void {
+    const rc = this.cast(e)
+    const first = rc.intersectObjects([...this.items.pickables(), ...this.rooms.openingTargets], true).find((h) => itemIdOf(h.object) || h.object.userData.openingId)
+    if (first) {
+      const itemId = itemIdOf(first.object)
+      return this.store.select(itemId ? { kind: 'item', id: itemId } : { kind: 'opening', id: first.object.userData.openingId as string })
+    }
+    const roomId = rc.intersectObjects(this.rooms.floors, false)[0]?.object.userData.roomId as string | undefined
+    if (roomId) return this.store.select({ kind: 'room', id: roomId })
+    const under = this.store.doc.scene.underlay
+    const p = under ? this.floorPoint(e, UNDERLAY_Y) : null
+    this.store.select(under && p && underlayContains(under, p) ? { kind: 'underlay', id: 'underlay' } : null)
+  }
+
+  // ---------- масштаб плана по двум точкам ----------
+
+  get calibration(): { points: P[] } | null {
+    return this.calib
+  }
+
+  startCalibration(): void {
+    this.calib = { points: [] }
+    this.calibrationChanged()
+  }
+
+  stopCalibration(): void {
+    if (!this.calib) return
+    this.calib = null
+    this.calibrationChanged()
+  }
+
+  /** Поставить точку разметки. Третья точка начинает разметку заново. */
+  addCalibrationPoint(p: P): void {
+    if (!this.calib) return
+    this.calib.points = this.calib.points.length >= 2 ? [p] : [...this.calib.points, p]
+    this.calibrationChanged()
+  }
+
+  private calibrationChanged(): void {
+    const pts = this.calib?.points ?? []
+    this.calibLine.visible = pts.length === 2
+    if (pts.length === 2) {
+      this.calibLine.geometry.dispose()
+      this.calibLine.geometry = new LineSegmentsGeometry().setPositions([pts[0].x, UNDERLAY_Y + 0.01, pts[0].z, pts[1].x, UNDERLAY_Y + 0.01, pts[1].z])
+    }
+    this.calibDots.forEach((m, i) => {
+      m.visible = i < pts.length
+      if (pts[i]) m.position.set(pts[i].x, UNDERLAY_Y + 0.01, pts[i].z)
+    })
+    this.refreshOverlay()
+    this.stage.invalidate()
+    this.onCalibration()
   }
 
   // ---------- перетаскивание ----------
@@ -219,6 +315,11 @@ export class Interact {
     }
     const pos = y > 0 && !item.lift ? { x: px, z: pz } : this.settle(doc, d.id, px, pz, e.altKey)
     this.store.update((doc0) => updateItem(doc0, d.id, { x: pos.x, z: pos.z, y }), true)
+  }
+
+  private dragUnderlay(d: Extract<Drag, { kind: 'underlay' }>, e: PointerEvent): void {
+    const p = this.floorPoint(e, UNDERLAY_Y)
+    if (p) this.store.update((doc) => updateUnderlay(doc, { x: p.x + d.ox, z: p.z + d.oz }), true)
   }
 
   private dragOpening(d: Extract<Drag, { kind: 'opening' }>, e: PointerEvent): void {
@@ -359,7 +460,7 @@ export class Interact {
     const sel = this.store.selection
     if (!sel) return
     this.store.select(null)
-    this.store.update((doc) => (sel.kind === 'item' ? removeItem(doc, sel.id) : sel.kind === 'opening' ? removeOpening(doc, sel.id) : removeRoom(doc, sel.id)))
+    this.store.update((doc) => (sel.kind === 'item' ? removeItem(doc, sel.id) : sel.kind === 'opening' ? removeOpening(doc, sel.id) : sel.kind === 'room' ? removeRoom(doc, sel.id) : setUnderlay(doc, null)))
   }
 
   private onKey(e: KeyboardEvent): void {
@@ -384,9 +485,21 @@ export class Interact {
     } else if (e.code === 'KeyR' && !mod) {
       this.rotateSelected(e.shiftKey ? -90 : 90)
     } else if (e.code === 'Escape') {
-      this.store.select(null)
+      if (this.calib) this.stopCalibration()
+      else this.store.select(null)
     } else if (e.code.startsWith('Arrow')) {
       const sel = this.store.selection
+      if (sel?.kind === 'underlay') {
+        // план двигается по сантиметру (с Shift — по 10 см), по осям экрана в виде сверху
+        e.preventDefault()
+        const u = this.store.doc.scene.underlay
+        if (!u) return
+        const step = e.shiftKey ? 0.1 : 0.01
+        const dx = e.code === 'ArrowRight' ? step : e.code === 'ArrowLeft' ? -step : 0
+        const dz = e.code === 'ArrowDown' ? step : e.code === 'ArrowUp' ? -step : 0
+        this.store.update((doc) => updateUnderlay(doc, { x: u.x + dx, z: u.z + dz }))
+        return
+      }
       if (sel?.kind !== 'item') return
       e.preventDefault()
       const item = this.store.doc.items.find((i) => i.id === sel.id)
@@ -440,6 +553,12 @@ export class Interact {
       this.setBox(new THREE.Vector3(r.x - r.w / 2, 0.02, r.z - r.d / 2), new THREE.Vector3(r.x + r.w / 2, 0.02, r.z + r.d / 2))
       this.outline.visible = true
       this.handles.visible = true
+    } else if (sel.kind === 'underlay') {
+      const u = doc.scene.underlay
+      if (!u) return this.setTags([])
+      const size = underlaySize(u)
+      this.setBox(new THREE.Vector3(u.x - size.w / 2, UNDERLAY_Y + 0.005, u.z - size.d / 2), new THREE.Vector3(u.x + size.w / 2, UNDERLAY_Y + 0.005, u.z + size.d / 2))
+      this.outline.visible = true
     } else {
       const o = doc.openings.find((q) => q.id === sel.id)
       if (!o) return this.setTags([])
@@ -479,6 +598,21 @@ export class Interact {
     const doc = this.store.doc
     const lang = this.store.lang
     if (!sel) return
+    if (sel.kind === 'underlay') {
+      const u = doc.scene.underlay
+      if (!u) return this.setTags([])
+      const size = underlaySize(u)
+      const pts = this.calib?.points ?? []
+      // точки разметки держат размер на экране
+      for (const m of this.calibDots) {
+        if (!m.visible) continue
+        const k = THREE.MathUtils.clamp(this.stage.camera.position.distanceTo(m.position) * 0.012, 0.06, 0.5)
+        m.scale.set(k, 1, k)
+      }
+      const tags = [{ text: `${fmt(lang, size.w)} × ${fmt(lang, size.d)} ${tr(lang, 'm')}`, at: new THREE.Vector3(u.x, UNDERLAY_Y, u.z + size.d / 2 + 0.4) }]
+      if (pts.length === 2) tags.push({ text: `${fmt(lang, Math.hypot(pts[1].x - pts[0].x, pts[1].z - pts[0].z))} ${tr(lang, 'm')}`, at: new THREE.Vector3((pts[0].x + pts[1].x) / 2, UNDERLAY_Y + 0.05, (pts[0].z + pts[1].z) / 2) })
+      return this.setTags(tags)
+    }
     if (sel.kind === 'item') {
       const size = this.items.size(sel.id)
       const item = doc.items.find((i) => i.id === sel.id)

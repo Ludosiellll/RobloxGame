@@ -115,6 +115,11 @@ button { cursor: pointer; }
 .btn-row .btn { flex: 1 1 auto; }
 .btn-stack { display: grid; gap: 8px; }
 .confirm p { margin: 0 0 10px; }
+.confirm label { display: block; margin: 0 0 6px; }
+.confirm .num-input.wide { width: 100%; box-sizing: border-box; margin: 0 0 10px; text-align: left; }
+.hint { margin: 0; font-size: 12px; line-height: 1.45; color: var(--ink-2); }
+.btn-tape { background: var(--tape); border-color: var(--tape-deep); color: var(--tape-ink); font-weight: 600; }
+.btn-tape:hover { background: color-mix(in srgb, var(--tape) 88%, #000); }
 .lang-inline { display: none; }
 
 /* ---------- каталог ---------- */

@@ -10,6 +10,8 @@ export function extOf(name: string): string {
 }
 
 export const isModelFile = (name: string): boolean => (MODEL_EXTS as readonly string[]).includes(extOf(name))
+/** Картинка, которую можно положить на коврик как план квартиры. */
+export const isImageFile = (name: string): boolean => ['png', 'jpg', 'jpeg', 'webp'].includes(extOf(name))
 export const isArchive = (name: string): boolean => extOf(name) === 'zip'
 
 const isJunk = (path: string) => /(^|\/)(__MACOSX|\.[^/]*)(\/|$)/.test(path) || /(^|\/)\._/.test(path)

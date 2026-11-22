@@ -4,6 +4,9 @@
 
 - Встроенный каталог — 124 модели [Kenney Furniture Kit](https://kenney.nl/assets/furniture-kit) (CC0).
 - Свои модели: GLB, glTF, FBX, OBJ, STL, DAE, PLY, 3MF и ZIP-архивы (например со Sketchfab).
+- План квартиры: фото или скан плана ложится на коврик как калька; масштаб задаётся по двум точкам с известным расстоянием.
+- Проект файлом: архив zip с проектом, своими моделями и картинкой плана (Ctrl+S, Ctrl+O).
+- Программа для Windows: [установщик](https://github.com/Ludosiellll/RobloxGame/releases/latest/download/Maket-Setup.exe) и [версия без установки](https://github.com/Ludosiellll/RobloxGame/releases/latest/download/Maket-Portable.exe).
 
 ## Команды
 
@@ -15,6 +18,8 @@ npm run thumbs        # пересобрать превью каталога и 
 npm run pack          # склеить модели каталога в один файл
 npm run e2e           # сквозная проверка собранного приложения в браузере
 node scripts/shots.mjs имя [--phone] [--eval "js"]   # снимок собранного приложения
+npx electron-builder --linux dir --publish never      # собрать программу (оболочка Electron) для проверки под Linux
+xvfb-run -a node scripts/desktop-check.mjs release/linux-unpacked/maket   # запустить её и проверить, что сцена загрузилась
 ```
 
 ## Устройство
@@ -22,4 +27,8 @@ node scripts/shots.mjs имя [--phone] [--eval "js"]   # снимок собр�
 - `src/core/` — чистая логика без 3D: проект (`doc`), история, геометрия, стены из комнат, каталог, палитра, тексты.
 - `src/scene/` — three.js: сцена и свет, коврик, комнаты, модели, импорт, управление мышью.
 - `src/ui/` — интерфейс: каталог, панель свойств, веер цветов.
-- `assets/kit/` — исходные модели каталога; `npm run pack` склеивает их в `public/models/kit.bin`, `npm run thumbs` делает лист превью `public/models/kit-thumbs.webp`.
+- `assets/kit/` — исходные модели каталога; `npm run pack` склеивает их в `public/models/kit.json`, `npm run thumbs` делает лист превью `public/models/kit-thumbs.webp`.
+
+## Выпуск программы для Windows
+
+Поднять версию (`npm version 0.2.1 --no-git-tag-version`) и отправить в `main`. Сборка `.github/workflows/release.yml` соберёт установщик на Windows, запустит программу для проверки и выложит релиз `v<версия>`.

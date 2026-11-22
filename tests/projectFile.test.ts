@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addItem, defaultDoc } from '../src/core/doc'
-import { PROJECT_FORMAT, archivePath, buildManifest, modelFilePath, parseManifest, projectFileName, usedUserModels, type ProjectModel } from '../src/core/projectFile'
+import { PROJECT_FORMAT, archivePath, buildManifest, imageFilePath, modelFilePath, parseManifest, projectFileName, usedUserModels, type ProjectModel } from '../src/core/projectFile'
 
 const model = (id: string, extra: Partial<ProjectModel> = {}): ProjectModel => ({ id, name: 'Кресло', main: 'chair.glb', tilt: 0, files: ['chair.glb'], ...extra })
 
@@ -78,6 +78,10 @@ describe('файл проекта', () => {
     expect(archivePath('/abs/chair.glb')).toBe('abs/chair.glb')
     expect(archivePath('C:\\models\\chair.glb')).toBe('models/chair.glb')
     expect(archivePath('chair.glb')).toBe('chair.glb')
+  })
+
+  it('картинка плана лежит в архиве под своим ключом', () => {
+    expect(imageFilePath('p1abc')).toBe('images/p1abc')
   })
 
   it('имя файла проекта содержит дату и расширение zip', () => {

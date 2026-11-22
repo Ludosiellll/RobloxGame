@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { extOf, isArchive, isModelFile, pickMainFile, resolveSibling, titleFromFile } from '../src/core/importPick'
+import { extOf, isArchive, isImageFile, isModelFile, pickMainFile, resolveSibling, titleFromFile } from '../src/core/importPick'
 
 describe('import file picking', () => {
   it('reads extensions case-insensitively', () => {
@@ -41,5 +41,14 @@ describe('import file picking', () => {
     expect(resolveSibling(names, 'C:\\Users\\me\\textures\\wood_basecolor.PNG', 'model/scene.gltf')).toBe('model/textures/Wood_baseColor.png')
     expect(resolveSibling(names, 'textures/Wood%5FbaseColor.png', 'model/scene.gltf')).toBe('model/textures/Wood_baseColor.png')
     expect(resolveSibling(names, 'missing.png', 'model/scene.gltf')).toBe(null)
+  })
+
+  it('отличает картинку плана от прочих файлов', () => {
+    expect(isImageFile('План квартиры.JPG')).toBe(true)
+    expect(isImageFile('plan.jpeg')).toBe(true)
+    expect(isImageFile('plan.png')).toBe(true)
+    expect(isImageFile('plan.webp')).toBe(true)
+    expect(isImageFile('chair.glb')).toBe(false)
+    expect(isImageFile('plan.pdf')).toBe(false)
   })
 })

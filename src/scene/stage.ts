@@ -32,6 +32,8 @@ export class Stage {
   private tween: { from: THREE.Spherical; to: THREE.Spherical; fromT: THREE.Vector3; toT: THREE.Vector3; t: number } | null = null
   view: ViewMode = '3d'
   private bounds = new THREE.Box3(new THREE.Vector3(-3, 0, -3), new THREE.Vector3(3, 3, 3))
+  private readonly fitBox = new THREE.Box3()
+  private readonly viewListeners: ((view: ViewMode) => void)[] = []
 
   constructor(readonly host: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
@@ -155,6 +157,12 @@ export class Stage {
     this.applyLight()
   }
 
+  /** Что должно помещаться в кадр, если это больше комнат (план квартиры). Пустой — кадр по комнатам. */
+  setFitBox(box: THREE.Box3 | null): void {
+    if (box) this.fitBox.copy(box)
+    else this.fitBox.makeEmpty()
+  }
+
   private applyMat(): void {
     this.mat.setKind(this.matKind, this.maxAnisotropy)
     this.applyLight()
@@ -191,10 +199,18 @@ export class Stage {
   }
 
   /** Плавно перевести камеру: общий вид или план сверху. */
+  /** Сообщать о смене вида (объёмный или сверху). */
+  onView(fn: (view: ViewMode) => void): void {
+    this.viewListeners.push(fn)
+  }
+
   setView(view: ViewMode, immediate = false): void {
+    const changed = view !== this.view
     this.view = view
-    const center = this.bounds.getCenter(new THREE.Vector3())
-    const size = this.bounds.getSize(new THREE.Vector3())
+    if (changed) for (const fn of this.viewListeners) fn(view)
+    const box = this.fitBox.isEmpty() ? this.bounds : this.fitBox
+    const center = box.getCenter(new THREE.Vector3())
+    const size = box.getSize(new THREE.Vector3())
     const span = Math.max(size.x, size.z * 1.25, 4)
     const target = new THREE.Vector3(center.x, view === 'plan' ? 0 : 0.6, center.z)
     const fit = (span / 2 / Math.tan((this.camera.fov * Math.PI) / 360)) * (this.camera.aspect < 1 ? 1.25 / this.camera.aspect : 1.25)
@@ -206,6 +222,7 @@ export class Stage {
     while (to.theta - from.theta > Math.PI) to.theta -= Math.PI * 2
     while (to.theta - from.theta < -Math.PI) to.theta += Math.PI * 2
     if (immediate) {
+      this.tween = null
       this.controls.target.copy(target)
       this.camera.position.setFromSpherical(to).add(target)
       this.camera.lookAt(target)

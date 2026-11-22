@@ -4,7 +4,7 @@ import { sanitizeDoc, type Doc } from './core/doc'
 import { History } from './core/history'
 import { starterDoc } from './core/starter'
 
-export type Selection = { kind: 'item' | 'room' | 'opening'; id: string } | null
+export type Selection = { kind: 'item' | 'room' | 'opening' | 'underlay'; id: string } | null
 export type Lang = 'ru' | 'en'
 type Change = 'doc' | 'selection' | 'lang'
 
@@ -56,6 +56,11 @@ export class Store {
     }
     this.restored = doc !== null
     this.history = new History(doc ?? starterDoc())
+    // окно закрывают или сворачивают — отложенную запись делаем сразу
+    if (typeof window !== 'undefined') {
+      window.addEventListener('pagehide', () => this.flush())
+      document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && this.flush())
+    }
   }
 
   get doc(): Doc {
@@ -127,7 +132,7 @@ export class Store {
     const s = this.selection
     if (!s) return
     const d = this.doc
-    const alive = s.kind === 'item' ? d.items.some((i) => i.id === s.id) : s.kind === 'room' ? d.rooms.some((r) => r.id === s.id) : d.openings.some((o) => o.id === s.id)
+    const alive = s.kind === 'item' ? d.items.some((i) => i.id === s.id) : s.kind === 'room' ? d.rooms.some((r) => r.id === s.id) : s.kind === 'opening' ? d.openings.some((o) => o.id === s.id) : d.scene.underlay !== null
     if (!alive) {
       this.selection = null
       this.emit('selection')
@@ -143,6 +148,14 @@ export class Store {
 
   private scheduleSave(): void {
     if (this.saveTimer) clearTimeout(this.saveTimer)
-    this.saveTimer = setTimeout(() => write(DOC_KEY, JSON.stringify(this.doc)), 400)
+    this.saveTimer = setTimeout(() => this.flush(), 400)
+  }
+
+  /** Записать проект сразу: окно закрывают или сворачивают, ждать уже нельзя. */
+  flush(): void {
+    if (!this.saveTimer) return
+    clearTimeout(this.saveTimer)
+    this.saveTimer = null
+    write(DOC_KEY, JSON.stringify(this.doc))
   }
 }

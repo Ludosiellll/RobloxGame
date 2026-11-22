@@ -1,12 +1,14 @@
 // Интерфейс: верхняя панель, каталог, панель свойств, сообщения, приём файлов.
 
 import { CATEGORIES, KIT, KIT_BY_KEY, KIT_THUMB, SLOT_NAMES, type CatId } from '../core/catalog'
-import { addRoom, defaultDoc, LIMITS, setItemColor, setLight, setScene, setWalls, updateItem, updateOpening, updateRoom, type Doc, type FloorKind, type Item, type MatKind } from '../core/doc'
+import { addRoom, defaultDoc, LIMITS, setItemColor, setLight, setScene, setUnderlay, setWalls, updateItem, updateOpening, updateRoom, updateUnderlay, type Doc, type FloorKind, type Item, type MatKind } from '../core/doc'
 import { fmt, tr, type TextKey } from '../core/i18n'
-import { isArchive } from '../core/importPick'
+import { isArchive, isImageFile } from '../core/importPick'
 import { projectFileName } from '../core/projectFile'
 import { starterDoc } from '../core/starter'
+import { calibrate, defaultUnderlay, underlaySize } from '../core/underlay'
 import { snapOpening } from '../core/walls'
+import { prepareImage, type ImageStore } from '../images'
 import { saveFile } from '../platform'
 import { packProject, readProject, type OpenedProject } from '../projectFile'
 import type { Interact } from '../scene/interact'
@@ -35,6 +37,7 @@ export interface UiDeps {
   items: ItemsView
   rooms: RoomsView
   userModels: UserModels
+  images: ImageStore
   toaster: Toaster
 }
 
@@ -55,6 +58,7 @@ export class Ui {
   private readonly fan: FanDeck
   private readonly file = h('input', { type: 'file', id: 'model-file', multiple: true, accept: ACCEPT, hidden: true })
   private readonly projectFile = h('input', { type: 'file', id: 'project-file', accept: '.zip', hidden: true })
+  private readonly planFile = h('input', { type: 'file', id: 'plan-file', accept: 'image/png,image/jpeg,image/webp', hidden: true })
   private tab: Tab = 'living'
   private controls: Control[] = []
   private signature = ''
@@ -64,7 +68,7 @@ export class Ui {
 
   constructor(root: HTMLElement, private readonly d: UiDeps) {
     this.fan = new FanDeck(() => d.store.lang)
-    root.append(this.top, this.inspector, this.fan.el, this.tray, this.helpEl, d.toaster.el, this.drop, this.file, this.projectFile)
+    root.append(this.top, this.inspector, this.fan.el, this.tray, this.helpEl, d.toaster.el, this.drop, this.file, this.projectFile, this.planFile)
     this.file.addEventListener('change', () => {
       const files = [...(this.file.files ?? [])]
       this.file.value = ''
@@ -75,6 +79,12 @@ export class Ui {
       this.projectFile.value = ''
       if (file) void this.importFiles([file], true)
     })
+    this.planFile.addEventListener('change', () => {
+      const file = this.planFile.files?.[0]
+      this.planFile.value = ''
+      if (file) void this.loadPlan(file)
+    })
+    d.interact.onCalibration = () => this.renderInspector()
     // Ctrl+S — проект в файл, Ctrl+O — открыть файл проекта
     window.addEventListener('keydown', (e) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return
@@ -86,6 +96,7 @@ export class Ui {
         this.projectFile.click()
       }
     })
+    d.stage.onView(() => this.renderTopState())
     this.bindDrop()
     d.store.on((c) => {
       if (c === 'lang') {
@@ -156,7 +167,7 @@ export class Ui {
     }
     this.helpEl.replaceChildren(
       h('header', { class: 'fan-head' }, h('div', { class: 'label' }, this.t('helpTitle')), h('button', { class: 'icon-btn', type: 'button', 'aria-label': this.t('cancel'), html: ICON.close, onclick: () => (this.helpEl.hidden = true) })),
-      h('ul', { class: 'help-list' }, ...(['helpMove', 'helpOrbit', 'helpRooms', 'helpImport', 'helpKeys'] as TextKey[]).map((k) => h('li', {}, this.t(k)))),
+      h('ul', { class: 'help-list' }, ...(['helpMove', 'helpOrbit', 'helpRooms', 'helpPlan', 'helpImport', 'helpProject', 'helpKeys'] as TextKey[]).map((k) => h('li', {}, this.t(k)))),
       h('p', { class: 'credit' }, this.t('kitCredit')),
     )
     this.helpEl.hidden = false
@@ -302,7 +313,8 @@ export class Ui {
   async saveProject(): Promise<void> {
     const { store, userModels, toaster } = this.d
     try {
-      const blob = await packProject(store.doc, userModels.list)
+      const plan = store.doc.scene.underlay
+      const blob = await packProject(store.doc, userModels.list, plan ? await this.d.images.get(plan.image) : null)
       const outcome = await saveFile(projectFileName(new Date()), blob)
       if (outcome === 'saved') toaster.show(this.t('projectSaved'))
       else if (outcome === 'failed') toaster.show(this.t('projectSaveFailed'), 'error')
@@ -314,6 +326,7 @@ export class Ui {
   private async openProject(project: OpenedProject): Promise<void> {
     const { store, userModels, toaster, stage } = this.d
     const failed = (await userModels.adopt(project.models)) + project.missing
+    if (project.image) await this.d.images.adopt(project.image.id, project.image.blob)
     store.select(null)
     // обычная правка, а не новый проект: «Отменить» вернёт прежний
     store.update(() => project.doc)
@@ -323,9 +336,26 @@ export class Ui {
     else toaster.show(this.t('projectOpened'))
   }
 
-  /** Принять файлы: проект «Макета» открывается, остальное считается моделями. */
+  /** Положить картинку на коврик как план квартиры. */
+  async loadPlan(file: Blob): Promise<void> {
+    const { store, stage, toaster, images } = this.d
+    toaster.show(this.t('reading'), 'info', 60_000)
+    const prepared = await prepareImage(file)
+    if (!prepared) return toaster.show(this.t('planBad'), 'error')
+    const id = await images.put(prepared.blob)
+    const old = store.doc.scene.underlay
+    const c = stage.controls.target
+    // новая картинка встаёт на место прежней, с тем же масштабом по ширине
+    store.update((d) => setUnderlay(d, old ? { ...old, image: id, ratio: prepared.ratio } : defaultUnderlay(id, prepared.ratio, { x: c.x, z: c.z })))
+    store.select({ kind: 'underlay', id: 'underlay' })
+    stage.setView('plan')
+    toaster.show(this.t('planLoaded'))
+  }
+
+  /** Принять файлы: проект «Макета» открывается, одна картинка становится планом квартиры, остальное считается моделями. */
   async importFiles(files: File[], projectOnly = false): Promise<void> {
     const { toaster, userModels, interact } = this.d
+    if (!projectOnly && files.length === 1 && isImageFile(files[0].name)) return this.loadPlan(files[0])
     toaster.show(this.t('reading'), 'info', 60_000)
     if (projectOnly || (files.length === 1 && isArchive(files[0].name))) {
       const res = await readProject(files[0])
@@ -357,13 +387,14 @@ export class Ui {
     const sel = store.selection
     const doc = store.doc
     let sig = `${store.lang}|${sel?.kind ?? 'scene'}|${sel?.id ?? ''}`
-    if (!sel) sig += `|${doc.rooms.map((r) => r.id).join(',')}|${this.confirmReset}`
+    if (!sel) sig += `|${doc.rooms.map((r) => r.id).join(',')}|${this.confirmReset}|${doc.scene.underlay !== null}`
+    if (sel?.kind === 'underlay') sig += `|${this.d.interact.calibration?.points.length ?? 'off'}`
     if (sel?.kind === 'item') sig += `|${items.template(sel.id)?.slots.join(',') ?? '…'}`
     if (sel?.kind === 'room') sig += `|${doc.rooms.length}`
     if (sig !== this.signature) {
       this.signature = sig
       this.controls = []
-      const body = !sel ? this.sceneView(doc) : sel.kind === 'item' ? this.itemView(doc, sel.id) : sel.kind === 'room' ? this.roomView(doc, sel.id) : this.openingView(doc, sel.id)
+      const body = !sel ? this.sceneView(doc) : sel.kind === 'item' ? this.itemView(doc, sel.id) : sel.kind === 'room' ? this.roomView(doc, sel.id) : sel.kind === 'opening' ? this.openingView(doc, sel.id) : this.underlayView()
       this.inspector.replaceChildren(...body)
       this.inspector.scrollTop = 0
     }
@@ -462,6 +493,12 @@ export class Ui {
             h('button', { class: 'btn', type: 'button', onclick: () => { this.confirmReset = true; this.renderInspector() } }, this.t('startOver')),
             h('button', { class: 'btn', type: 'button', onclick: () => { store.replace(starterDoc()); this.d.stage.setView('3d') } }, this.t('loadDemo'))))
 
+    const planMeta = h('span', { class: 'code' })
+    this.controls.push({ el: planMeta, sync: (d) => { const u = d.scene.underlay; if (u) { const size = underlaySize(u); planMeta.textContent = `${fmt(lang, size.w)} × ${fmt(lang, size.d)} ${this.t('m')}` } } })
+    const plan = doc.scene.underlay
+      ? [h('button', { class: 'row-btn', type: 'button', id: 'select-plan', onclick: () => { store.select({ kind: 'underlay', id: 'underlay' }); this.d.stage.setView('plan') } }, h('span', {}, this.t('plan')), planMeta)]
+      : [h('button', { class: 'btn with-icon', type: 'button', id: 'load-plan', onclick: () => this.planFile.click() }, h('span', { html: ICON.plus }), this.t('planLoad')), h('p', { class: 'hint' }, this.t('planHint'))]
+
     void interact
     return [
       this.head(this.t('scene')),
@@ -474,7 +511,56 @@ export class Ui {
         this.chip(this.t('wallColor'), (d) => d.walls.color, (hex) => store.update((d) => setWalls(d, { color: hex }))),
       ),
       this.section(this.t('rooms'), ...roomRows, addRoomBtn),
+      this.section(this.t('plan'), ...plan),
       this.section(this.t('project'), project, h('button', { class: 'btn lang-inline', type: 'button', onclick: () => store.setLang(lang === 'ru' ? 'en' : 'ru') }, this.t('language'))),
+    ]
+  }
+
+  private underlayView(): HTMLElement[] {
+    const { store, interact, toaster } = this.d
+    const lang = store.lang
+    const cal = interact.calibration
+    const cancel = h('button', { class: 'btn', type: 'button', onclick: () => interact.stopCalibration() }, this.t('cancel'))
+    let scale: HTMLElement
+    if (!cal) {
+      scale = h('button', { class: 'btn', type: 'button', id: 'plan-calibrate', onclick: () => { this.d.stage.setView('plan'); interact.startCalibration() } }, this.t('planCalibrate'))
+    } else if (cal.points.length < 2) {
+      scale = h('div', { class: 'confirm' }, h('p', {}, this.t(cal.points.length === 0 ? 'planCalStep1' : 'planCalStep2')), h('div', { class: 'btn-row' }, cancel))
+    } else {
+      const [a, b] = cal.points
+      const input = h('input', { type: 'text', id: 'plan-distance', class: 'num-input wide', inputMode: 'decimal', autocomplete: 'off', placeholder: lang === 'ru' ? '3,5' : '3.5' })
+      const form = h('form', { class: 'confirm' },
+        h('label', { for: 'plan-distance' }, this.t('planCalDistance')),
+        input,
+        h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-tape', type: 'submit', id: 'plan-apply' }, this.t('planCalApply')), cancel))
+      form.addEventListener('submit', (e) => {
+        e.preventDefault()
+        const meters = Number(input.value.trim().replace(',', '.'))
+        const u = store.doc.scene.underlay
+        if (!u || !(meters > 0) || !Number.isFinite(meters)) return toaster.show(this.t('planCalBad'), 'error')
+        store.update((d) => setUnderlay(d, calibrate(u, a, b, meters)))
+        interact.stopCalibration()
+        toaster.show(this.t('planCalDone'))
+      })
+      scale = form
+      setTimeout(() => input.focus(), 0)
+    }
+    const u0 = (d: Doc) => d.scene.underlay
+    return [
+      this.head(this.t('plan')),
+      this.section(this.t('planScale'),
+        scale,
+        this.slider({ id: 'plan-width', label: this.t('planWidth'), min: LIMITS.underMin, max: LIMITS.underMax, step: 0.1, get: (d) => u0(d)?.w ?? null, set: (v) => store.update((d) => updateUnderlay(d, { w: v }), true), show: (v) => `${fmt(lang, v)} ${this.t('m')}` }),
+      ),
+      this.section(this.t('planLook'),
+        this.slider({ id: 'plan-opacity', label: this.t('planOpacity'), min: 10, max: 100, step: 5, get: (d) => { const u = u0(d); return u ? Math.round(u.opacity * 100) : null }, set: (v) => store.update((d) => updateUnderlay(d, { opacity: v / 100 }), true), show: (v) => `${v}%` }),
+        h('div', { class: 'btn-row' },
+          h('button', { class: 'btn', type: 'button', id: 'plan-rotate', onclick: () => store.update((d) => updateUnderlay(d, { rot: (u0(d)?.rot ?? 0) + 90 })) }, this.t('planRotate')),
+          h('button', { class: 'btn', type: 'button', onclick: () => this.planFile.click() }, this.t('planReplace'))),
+      ),
+      this.section(this.t('planPlace'),
+        h('p', { class: 'hint' }, this.t('planMoveHint')),
+        h('button', { class: 'btn btn-danger', type: 'button', id: 'plan-remove', onclick: () => interact.deleteSelected() }, this.t('planRemove'))),
     ]
   }
 

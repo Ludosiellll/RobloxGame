@@ -5,6 +5,9 @@ import { RoomsView } from './scene/rooms'
 import { ItemsView } from './scene/view'
 import { ModelLibrary } from './scene/models'
 import { Interact } from './scene/interact'
+import { UnderlayView } from './scene/underlay'
+import { ImageStore } from './images'
+import { underlaySize } from './core/underlay'
 import { Store } from './store'
 import { UserModels } from './userModels'
 import { Toaster, Ui } from './ui/app'
@@ -18,6 +21,8 @@ async function start(): Promise<void> {
   // сначала возвращаем сохранённые модели пользователя, чтобы проект нашёл их при открытии
   await Promise.race([userModels.restore(), new Promise((r) => setTimeout(r, 2500))])
 
+  const images = new ImageStore()
+  const underlay = new UnderlayView(stage, (id) => images.get(id))
   const rooms = new RoomsView(stage)
   const items = new ItemsView(stage, models)
   const uiRoot = document.getElementById('ui')!
@@ -26,6 +31,8 @@ async function start(): Promise<void> {
   const toaster = new Toaster()
   const interact = new Interact(stage, store, rooms, items, tags, (text) => toaster.show(text))
 
+  // план квартиры виден в виде сверху, а в объёмном — только пока выбран
+  const planWanted = (): boolean => stage.view === 'plan' || store.selection?.kind === 'underlay'
   let boundsKey = ''
   const render = (): void => {
     const doc = store.doc
@@ -39,6 +46,16 @@ async function start(): Promise<void> {
     stage.setMat(doc.scene.mat)
     stage.setTime(doc.light.time)
     rooms.sync(doc)
+    underlay.sync(doc, planWanted())
+    // в кадр должен помещаться и план квартиры, если он больше комнат
+    const plan = doc.scene.underlay
+    if (plan) {
+      const size = underlaySize(plan)
+      const frame = rooms.bounds(doc)
+      frame.expandByPoint(new THREE.Vector3(plan.x - size.w / 2, 0, plan.z - size.d / 2))
+      frame.expandByPoint(new THREE.Vector3(plan.x + size.w / 2, 0, plan.z + size.d / 2))
+      stage.setFitBox(frame)
+    } else stage.setFitBox(null)
     const key = JSON.stringify(doc.rooms.map((r) => [r.x, r.z, r.w, r.d])) + doc.walls.h
     if (key !== boundsKey) {
       boundsKey = key
@@ -48,10 +65,18 @@ async function start(): Promise<void> {
     items.sync(doc)
   }
   store.on((c) => c === 'doc' && render())
+  const showPlan = (): void => {
+    underlay.sync(store.doc, planWanted())
+    stage.invalidate()
+  }
+  store.on((c) => c === 'selection' && showPlan())
+  stage.onView(showPlan)
   render()
   stage.setView('3d', true)
 
-  const ui = new Ui(uiRoot, { store, stage, interact, items, rooms, userModels, toaster })
+  const ui = new Ui(uiRoot, { store, stage, interact, items, rooms, userModels, images, toaster })
+  // картинки планов, на которые проект уже не ссылается, из хранилища убираем
+  void images.keepOnly(store.doc.scene.underlay?.image ?? null)
   document.documentElement.lang = store.lang
   store.on((c) => c === 'lang' && (document.documentElement.lang = store.lang))
 
@@ -62,7 +87,7 @@ async function start(): Promise<void> {
   })
 
   // для проверочных скриптов
-  Object.assign(window, { __maket: { store, stage, interact, items, rooms, ui, userModels, THREE } })
+  Object.assign(window, { __maket: { store, stage, interact, items, rooms, ui, userModels, underlay, images, THREE } })
 }
 
 void start()

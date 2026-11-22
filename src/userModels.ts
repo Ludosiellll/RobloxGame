@@ -2,11 +2,11 @@
 
 import { isArchive, isModelFile, pickMainFile, titleFromFile } from './core/importPick'
 import type { ProjectModel } from './core/projectFile'
+import { tx } from './db'
 import { expandFiles, ImportError, loadFromFiles, type FileSet } from './scene/importers'
 import type { ModelLibrary, UserModel } from './scene/models'
 import { renderThumb } from './scene/thumb'
 
-const DB = 'maket-db'
 const STORE = 'models'
 
 interface Row {
@@ -19,28 +19,6 @@ interface Row {
   files: { name: string; blob: Blob }[]
 }
 
-function open(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB, 1)
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE, { keyPath: 'id' })
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-}
-
-async function tx<T>(mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRequest<T>): Promise<T | null> {
-  try {
-    const db = await open()
-    return await new Promise((resolve, reject) => {
-      const req = run(db.transaction(STORE, mode).objectStore(STORE))
-      req.onsuccess = () => resolve(req.result)
-      req.onerror = () => reject(req.error)
-    })
-  } catch {
-    return null
-  }
-}
-
 export type ImportResult = { added: UserModel[]; errors: ImportError['code'][] }
 
 export class UserModels {
@@ -51,7 +29,7 @@ export class UserModels {
 
   /** Вернуть модели, сохранённые в прошлый раз. */
   async restore(): Promise<void> {
-    const rows = (await tx<Row[]>('readonly', (s) => s.getAll())) ?? []
+    const rows = (await tx<Row[]>(STORE, 'readonly', (s) => s.getAll())) ?? []
     rows.sort((a, b) => a.added - b.added)
     for (const r of rows) {
       const files: FileSet = new Map(r.files.map((f) => [f.name, f.blob]))
@@ -64,7 +42,7 @@ export class UserModels {
 
   private persist(m: UserModel & { added: number }): void {
     const row: Row = { id: m.id, name: m.name, main: m.main, tilt: m.tilt, thumb: m.thumb, added: m.added, files: [...m.files].map(([name, blob]) => ({ name, blob })) }
-    void tx('readwrite', (s) => s.put(row))
+    void tx(STORE, 'readwrite', (s) => s.put(row))
   }
 
   async importFiles(files: File[]): Promise<ImportResult> {
@@ -141,7 +119,7 @@ export class UserModels {
   remove(id: string): void {
     this.list = this.list.filter((m) => m.id !== id)
     this.models.removeUser(id)
-    void tx('readwrite', (s) => s.delete(id))
+    void tx(STORE, 'readwrite', (s) => s.delete(id))
     this.onChange()
   }
 

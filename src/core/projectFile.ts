@@ -52,6 +52,11 @@ export function archivePath(name: string): string {
     .join('/')
 }
 
+/** Где в архиве лежит картинка плана квартиры. */
+export function imageFilePath(key: string): string {
+  return `images/${key}`
+}
+
 const isSafeId = (v: unknown): v is string => typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v)
 /** Путь внутри архива: относительный, без выхода наверх. */
 const isSafePath = (v: unknown): v is string =>
