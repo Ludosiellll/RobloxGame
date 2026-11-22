@@ -3,9 +3,12 @@
 import { CATEGORIES, KIT, KIT_BY_KEY, KIT_THUMB, SLOT_NAMES, type CatId } from '../core/catalog'
 import { addRoom, defaultDoc, LIMITS, setItemColor, setLight, setScene, setWalls, updateItem, updateOpening, updateRoom, type Doc, type FloorKind, type Item, type MatKind } from '../core/doc'
 import { fmt, tr, type TextKey } from '../core/i18n'
+import { isArchive } from '../core/importPick'
+import { projectFileName } from '../core/projectFile'
 import { starterDoc } from '../core/starter'
 import { snapOpening } from '../core/walls'
 import { saveFile } from '../platform'
+import { packProject, readProject, type OpenedProject } from '../projectFile'
 import type { Interact } from '../scene/interact'
 import { MAT_COLORS } from '../scene/mat'
 import type { RoomsView } from '../scene/rooms'
@@ -51,6 +54,7 @@ export class Ui {
   private readonly helpEl = h('div', { class: 'help board', hidden: true })
   private readonly fan: FanDeck
   private readonly file = h('input', { type: 'file', id: 'model-file', multiple: true, accept: ACCEPT, hidden: true })
+  private readonly projectFile = h('input', { type: 'file', id: 'project-file', accept: '.zip', hidden: true })
   private tab: Tab = 'living'
   private controls: Control[] = []
   private signature = ''
@@ -60,11 +64,27 @@ export class Ui {
 
   constructor(root: HTMLElement, private readonly d: UiDeps) {
     this.fan = new FanDeck(() => d.store.lang)
-    root.append(this.top, this.inspector, this.fan.el, this.tray, this.helpEl, d.toaster.el, this.drop, this.file)
+    root.append(this.top, this.inspector, this.fan.el, this.tray, this.helpEl, d.toaster.el, this.drop, this.file, this.projectFile)
     this.file.addEventListener('change', () => {
       const files = [...(this.file.files ?? [])]
       this.file.value = ''
       if (files.length) void this.importFiles(files)
+    })
+    this.projectFile.addEventListener('change', () => {
+      const file = this.projectFile.files?.[0]
+      this.projectFile.value = ''
+      if (file) void this.importFiles([file], true)
+    })
+    // Ctrl+S — проект в файл, Ctrl+O — открыть файл проекта
+    window.addEventListener('keydown', (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return
+      if (e.code === 'KeyS') {
+        e.preventDefault()
+        void this.saveProject()
+      } else if (e.code === 'KeyO') {
+        e.preventDefault()
+        this.projectFile.click()
+      }
     })
     this.bindDrop()
     d.store.on((c) => {
@@ -278,9 +298,43 @@ export class Ui {
     })
   }
 
-  async importFiles(files: File[]): Promise<void> {
+  /** Сохранить проект вместе со своими моделями в один файл. */
+  async saveProject(): Promise<void> {
+    const { store, userModels, toaster } = this.d
+    try {
+      const blob = await packProject(store.doc, userModels.list)
+      const outcome = await saveFile(projectFileName(new Date()), blob)
+      if (outcome === 'saved') toaster.show(this.t('projectSaved'))
+      else if (outcome === 'failed') toaster.show(this.t('projectSaveFailed'), 'error')
+    } catch {
+      toaster.show(this.t('projectSaveFailed'), 'error')
+    }
+  }
+
+  private async openProject(project: OpenedProject): Promise<void> {
+    const { store, userModels, toaster, stage } = this.d
+    const failed = (await userModels.adopt(project.models)) + project.missing
+    store.select(null)
+    // обычная правка, а не новый проект: «Отменить» вернёт прежний
+    store.update(() => project.doc)
+    stage.setView('3d')
+    this.renderTray()
+    if (failed) toaster.show(this.t('projectOpenedPartly', { n: failed }), 'error')
+    else toaster.show(this.t('projectOpened'))
+  }
+
+  /** Принять файлы: проект «Макета» открывается, остальное считается моделями. */
+  async importFiles(files: File[], projectOnly = false): Promise<void> {
     const { toaster, userModels, interact } = this.d
     toaster.show(this.t('reading'), 'info', 60_000)
+    if (projectOnly || (files.length === 1 && isArchive(files[0].name))) {
+      const res = await readProject(files[0])
+      if (res.ok) return this.openProject(res.project)
+      if (res.reason !== 'not_project' || projectOnly) {
+        const key: TextKey = res.reason === 'newer' ? 'errProjectNewer' : res.reason === 'broken' ? 'errProjectBroken' : 'errNotProject'
+        return toaster.show(this.t(key), 'error')
+      }
+    }
     const res = await userModels.importFiles(files)
     this.tab = 'my'
     this.renderTray()
@@ -400,9 +454,13 @@ export class Ui {
       ? h('div', { class: 'confirm' }, h('p', {}, this.t('startOverConfirm')), h('div', { class: 'btn-row' },
           h('button', { class: 'btn btn-danger', type: 'button', onclick: () => { this.confirmReset = false; store.replace(defaultDoc()); this.d.stage.setView('3d') } }, this.t('startOverYes')),
           h('button', { class: 'btn', type: 'button', onclick: () => { this.confirmReset = false; this.renderInspector() } }, this.t('cancel'))))
-      : h('div', { class: 'btn-row' },
-          h('button', { class: 'btn', type: 'button', onclick: () => { this.confirmReset = true; this.renderInspector() } }, this.t('startOver')),
-          h('button', { class: 'btn', type: 'button', onclick: () => { store.replace(starterDoc()); this.d.stage.setView('3d') } }, this.t('loadDemo')))
+      : h('div', { class: 'btn-stack' },
+          h('div', { class: 'btn-row' },
+            h('button', { class: 'btn', type: 'button', id: 'save-project', onclick: () => void this.saveProject() }, this.t('saveProject')),
+            h('button', { class: 'btn', type: 'button', id: 'open-project', onclick: () => this.projectFile.click() }, this.t('openProject'))),
+          h('div', { class: 'btn-row' },
+            h('button', { class: 'btn', type: 'button', onclick: () => { this.confirmReset = true; this.renderInspector() } }, this.t('startOver')),
+            h('button', { class: 'btn', type: 'button', onclick: () => { store.replace(starterDoc()); this.d.stage.setView('3d') } }, this.t('loadDemo'))))
 
     void interact
     return [

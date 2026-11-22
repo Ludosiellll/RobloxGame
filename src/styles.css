@@ -77,7 +77,7 @@ button { cursor: pointer; }
 .seg-wide .seg-btn { padding: 0 4px; font-size: 12px; letter-spacing: 0.06em; }
 
 /* ---------- панель свойств ---------- */
-.inspector { position: absolute; top: 66px; right: var(--side-r); bottom: var(--gap); width: var(--insp-w); overflow: auto; overscroll-behavior: contain; z-index: 10; scrollbar-width: thin; scrollbar-color: var(--edge) transparent; }
+.inspector { position: absolute; top: 66px; right: var(--side-r); bottom: var(--gap); width: var(--insp-w); overflow: auto; overscroll-behavior: contain; z-index: 10; }
 .insp-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 14px 10px 12px 16px; position: sticky; top: 0; background: var(--board); z-index: 2; border-bottom: 1px solid var(--rule); }
 .insp-head h2 { margin: 0; font: 600 17px/1.2 var(--f-ui); letter-spacing: -0.01em; text-wrap: balance; }
 .insp-head .sub { margin-top: 3px; font: 600 12px/1 var(--f-mark); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); }
@@ -113,6 +113,7 @@ button { cursor: pointer; }
 .row-btn:hover { border-color: var(--ink); }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .btn-row .btn { flex: 1 1 auto; }
+.btn-stack { display: grid; gap: 8px; }
 .confirm p { margin: 0 0 10px; }
 .lang-inline { display: none; }
 
@@ -120,6 +121,14 @@ button { cursor: pointer; }
 .tray { position: absolute; left: var(--side-l); right: calc(var(--side-r) + var(--insp-w) + 12px); bottom: var(--gap); z-index: 10; min-width: 0; }
 .tabs { display: flex; align-items: stretch; gap: 2px; padding: 0 6px 0 8px; border-bottom: 1px solid var(--rule); overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
+/* полосы прокрутки: тонкие, без стрелок, в цвет среза пенокартона */
+.inspector::-webkit-scrollbar, .tiles::-webkit-scrollbar, .help::-webkit-scrollbar { width: 10px; height: 10px; }
+.inspector::-webkit-scrollbar-track, .tiles::-webkit-scrollbar-track, .help::-webkit-scrollbar-track { background: transparent; }
+.inspector::-webkit-scrollbar-thumb, .tiles::-webkit-scrollbar-thumb, .help::-webkit-scrollbar-thumb { background: var(--core); border: 3px solid var(--board); }
+.inspector::-webkit-scrollbar-thumb:hover, .tiles::-webkit-scrollbar-thumb:hover, .help::-webkit-scrollbar-thumb:hover { background: var(--edge); }
+@supports not selector(::-webkit-scrollbar) {
+  .inspector, .tiles, .help { scrollbar-width: thin; scrollbar-color: var(--edge) transparent; }
+}
 .tab { flex: none; height: 38px; padding: 0 10px; border: 0; background: none; font: 700 13px/1 var(--f-mark); letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink-2); position: relative; white-space: nowrap; }
 .tab:hover { color: var(--ink); }
 .tab.is-on { color: var(--ink); }
@@ -127,7 +136,7 @@ button { cursor: pointer; }
 .tab-my { margin-left: auto; }
 .tray-toggle { align-self: center; flex: none; display: none; }
 .tray-toggle.is-closed svg { transform: rotate(180deg); }
-.tiles { display: flex; gap: 6px; padding: 10px 10px 12px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: var(--edge) transparent; }
+.tiles { display: flex; gap: 6px; padding: 10px 10px 12px; overflow-x: auto; overscroll-behavior-x: contain; }
 .tile { flex: none; width: 88px; padding: 6px 4px 5px; border: 1px solid transparent; background: none; border-radius: 2px; display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; touch-action: pan-x; }
 .tile:hover { border-color: var(--ink); background: #fff; }
 .tile:active { transform: translateY(1px); }

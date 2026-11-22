@@ -151,6 +151,34 @@ await page.waitForTimeout(2000)
 const afterReload = await state()
 check('проект и свои модели сохраняются', afterReload.items === beforeReload.items && afterReload.user === 2, JSON.stringify({ items: afterReload.items, user: afterReload.user }))
 
+// 9б. проект файлом: сохранить, всё стереть, открыть обратно
+const beforeSave = await state()
+const [download] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), page.keyboard.press('Control+s')])
+const projectPath = join(tmp, 'project.zip')
+await download.saveAs(projectPath)
+check('Ctrl+S сохраняет проект файлом', /^maket-project-\d{4}-\d{2}-\d{2}-\d{4}\.zip$/.test(download.suggestedFilename()), download.suggestedFilename())
+await page.evaluate(() => {
+  const m = window.__maket
+  for (const u of [...m.userModels.list]) m.userModels.remove(u.id)
+  m.store.update((d) => ({ ...d, items: [], openings: [] }))
+})
+await page.waitForTimeout(300)
+check('перед открытием сцена пустая и своих моделей нет', (await state()).items === 0 && (await state()).user === 0)
+await page.setInputFiles('#project-file', projectPath)
+await page.waitForFunction((n) => window.__maket.store.doc.items.length === n, beforeSave.items, { timeout: 20000 }).catch(() => {})
+await page.waitForTimeout(1500)
+const opened = await state()
+const ghosts = await page.evaluate(() => window.__maket.items.pickables().filter((g) => g.children.some((c) => c.userData.ghost)).length)
+check('файл проекта открывается вместе со своими моделями', opened.items === beforeSave.items && opened.openings === beforeSave.openings && opened.user === 2 && ghosts === 0, JSON.stringify({ items: opened.items, user: opened.user, ghosts }))
+await page.keyboard.press('Control+z')
+check('«Отменить» возвращает проект, который был до открытия', (await state()).items === 0)
+await page.keyboard.press('Control+Shift+z')
+check('«Вернуть» снова открывает проект из файла', (await state()).items === beforeSave.items)
+await page.setInputFiles('#project-file', join(tmp, 'pack.zip'))
+await page.waitForTimeout(800)
+check('чужой архив не открывается как проект', (await page.textContent('.toast.is-error').catch(() => '')).includes('не файл проекта') && (await state()).items === beforeSave.items)
+await page.waitForTimeout(400)
+
 // 10. сброс видеокарты (сон, смена драйвера): сцена должна нарисоваться заново и выглядеть так же
 const stageLook = async () => {
   const png = (await page.screenshot({ clip: { x: 300, y: 120, width: 600, height: 420 } })).toString('base64')

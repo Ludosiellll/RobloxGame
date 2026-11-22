@@ -1,6 +1,7 @@
 // Модели пользователя: импорт файлов, превью, хранение в браузере (IndexedDB).
 
 import { isArchive, isModelFile, pickMainFile, titleFromFile } from './core/importPick'
+import type { ProjectModel } from './core/projectFile'
 import { expandFiles, ImportError, loadFromFiles, type FileSet } from './scene/importers'
 import type { ModelLibrary, UserModel } from './scene/models'
 import { renderThumb } from './scene/thumb'
@@ -113,6 +114,28 @@ export class UserModels {
     }
     if (result.added.length) this.onChange()
     return result
+  }
+
+  /** Принять модели из файла проекта. Те, что уже есть, не трогаем. Возвращает, сколько моделей не прочиталось. */
+  async adopt(incoming: { meta: ProjectModel; files: FileSet }[]): Promise<number> {
+    let failed = 0
+    for (const { meta, files } of incoming) {
+      if (this.list.some((m) => m.id === meta.id)) continue
+      const model = { id: meta.id, name: meta.name, main: meta.main, tilt: meta.tilt, thumb: '', files, added: Date.now() }
+      this.models.registerUser(model)
+      try {
+        const t = await this.models.get({ kind: 'user', key: meta.id })
+        model.thumb = renderThumb(t.root)
+      } catch {
+        this.models.removeUser(meta.id)
+        failed++
+        continue
+      }
+      this.list.push(model)
+      this.persist(model)
+    }
+    this.onChange()
+    return failed
   }
 
   remove(id: string): void {
