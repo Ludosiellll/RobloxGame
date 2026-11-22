@@ -19,6 +19,7 @@ const errors = []
 page.on('pageerror', (e) => errors.push(String(e)))
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
 let failed = 0
+const ghostsNow = () => page.evaluate(() => window.__maket.items.pickables().filter((g) => g.children.some((c) => c.userData.ghost)).length)
 const check = (name, ok, extra = '') => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${extra ? ' — ' + extra : ''}`); if (!ok) failed++ }
 const shot = (name) => page.screenshot({ path: join(ROOT, 'shots', `${name}.png`) })
 const state = () => page.evaluate(() => { const m = window.__maket; const d = m.store.doc; return { items: d.items.length, rooms: d.rooms.map((r) => ({ id: r.id, x: r.x, z: r.z, w: r.w, d: r.d })), openings: d.openings.length, sel: m.store.selection, user: m.userModels.list.length } })
@@ -249,6 +250,28 @@ await page.keyboard.press('Control+z')
 check('нарисованные комнаты отменяются по одной', (await state()).rooms.length === roomsWere.length)
 await page.evaluate(() => window.__maket.stage.setView('3d', true))
 await page.waitForTimeout(500)
+
+// 9б3. обставить комнату готовым набором
+await page.keyboard.press('Escape')
+const beforeFurnish = await state()
+const emptyRoom = await page.evaluate(() => { const m = window.__maket; const id = m.store.newId('r'); const left = Math.min(...m.store.doc.rooms.map((r) => r.x - r.w / 2)); m.store.update((d) => ({ ...d, rooms: [...d.rooms, { id, x: left - 2.5, z: 0, w: 4, d: 3.6, floor: { kind: 'planks', color: '#c79a6b' } }] })); m.store.select({ kind: 'room', id }); return { id, x: left - 2.5, z: 0, w: 4, d: 3.6 } })
+await page.click('[data-furnish="bedroom"]')
+await page.waitForTimeout(1500)
+const inRoom = (r) => page.evaluate((r) => window.__maket.store.doc.items.filter((i) => Math.abs(i.x - r.x) <= r.w / 2 && Math.abs(i.z - r.z) <= r.d / 2).map((i) => i.src.key), r)
+let furniture = await inRoom(emptyRoom)
+check('пустая комната обставляется спальней', furniture.includes('bedDouble') && furniture.filter((k) => k === 'cabinetBedDrawer').length === 2 && (await ghostsNow()) === 0, furniture.join())
+await shot('e2e-furnish')
+await page.click('[data-furnish="office"]')
+check('в комнате с мебелью спрашивают: заменить или добавить', (await page.locator('#furnish-replace').count()) === 1 && (await page.locator('#furnish-add').count()) === 1)
+await page.click('#furnish-replace')
+await page.waitForTimeout(1200)
+furniture = await inRoom(emptyRoom)
+check('«Заменить» ставит кабинет вместо спальни', furniture.includes('desk') && furniture.includes('chairDesk') && !furniture.includes('bedDouble'), furniture.join())
+await page.keyboard.press('Control+z')
+check('замена мебели отменяется одним шагом', (await inRoom(emptyRoom)).includes('bedDouble'))
+await page.keyboard.press('Control+z')
+await page.keyboard.press('Control+z')
+check('после отмены проект такой же, как до расстановки', (await state()).items === beforeFurnish.items && (await state()).rooms.length === beforeFurnish.rooms.length)
 
 // 9в. план квартиры: загрузить картинку, задать масштаб по двум точкам, подвинуть, сохранить в проекте
 const planOf = () => page.evaluate(() => window.__maket.store.doc.scene.underlay)

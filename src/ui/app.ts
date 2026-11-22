@@ -3,13 +3,14 @@
 import { projectColors } from '../core/color'
 import { CATEGORIES, KIT, KIT_BY_KEY, KIT_THUMB, SLOT_NAMES, type CatId } from '../core/catalog'
 import { addRoom, defaultDoc, dropItems, LIMITS, setItemColor, setLight, setScene, setUnderlay, setWalls, updateItem, updateOpening, updateRoom, updateUnderlay, type Doc, type FloorKind, type Item, type MatKind } from '../core/doc'
+import { furnishRoom, type RoomKind } from '../core/furnish'
 import { fmt, tr, type TextKey } from '../core/i18n'
 import { isArchive, isImageFile } from '../core/importPick'
 import { isOrphan } from '../core/orphans'
 import { projectFileName } from '../core/projectFile'
 import { starterDoc } from '../core/starter'
 import { calibrate, defaultUnderlay, underlaySize } from '../core/underlay'
-import { snapOpening } from '../core/walls'
+import { roomAt, snapOpening } from '../core/walls'
 import { prepareImage, type ImageStore } from '../images'
 import { saveFile } from '../platform'
 import { packProject, readProject, type OpenedProject } from '../projectFile'
@@ -65,6 +66,8 @@ export class Ui {
   private controls: Control[] = []
   private signature = ''
   private confirmReset = false
+  /** в комнате уже есть мебель: ждём ответа, заменить её или добавить новую */
+  private furnishAsk: { room: string; kind: RoomKind } | null = null
   private trayOpen = true
   private sceneOpen = false
 
@@ -407,7 +410,7 @@ export class Ui {
     if (!sel) sig += `|${doc.rooms.map((r) => r.id).join(',')}|${this.confirmReset}|${doc.scene.underlay !== null}|${this.d.interact.drawing}`
     if (sel?.kind === 'underlay') sig += `|${this.d.interact.calibration?.points.length ?? 'off'}`
     if (sel?.kind === 'item') sig += `|${items.template(sel.id)?.slots.join(',') ?? '…'}`
-    if (sel?.kind === 'room') sig += `|${doc.rooms.length}`
+    if (sel?.kind === 'room') sig += `|${doc.rooms.length}|${this.furnishAsk?.room === sel.id ? this.furnishAsk.kind : ''}`
     if (sig !== this.signature) {
       this.signature = sig
       this.controls = []
@@ -643,6 +646,29 @@ export class Ui {
     ].filter((x): x is HTMLElement => !!x)
   }
 
+  /** Поставить в комнату готовый набор мебели — одним шагом отмены. */
+  private furnish(roomId: string, kind: RoomKind, replace: boolean): void {
+    const { store, items, toaster } = this.d
+    const res = furnishRoom(store.doc, roomId, kind, {
+      replace,
+      newId: () => store.newId('i'),
+      // размеры стоящей мебели: у каталога они известны, у своих моделей их знает сцена
+      sizeOf: (i) => {
+        const kit = i.src.kind === 'kit' ? KIT_BY_KEY.get(i.src.key) : null
+        if (kit) return kit
+        const s = items.size(i.id)
+        return s ? { w: s.x / i.scale, d: s.z / i.scale, h: s.y / i.scale } : null
+      },
+    })
+    if (!res.placed) {
+      toaster.show(this.t('furnishNone'), 'error')
+      return this.renderInspector()
+    }
+    store.update(() => res.doc)
+    toaster.show(this.t('furnished', { n: res.placed }))
+    this.renderInspector()
+  }
+
   private roomView(doc: Doc, id: string): HTMLElement[] {
     const { store, interact } = this.d
     const lang = store.lang
@@ -655,8 +681,22 @@ export class Ui {
       return b
     })
     const m = (v: number) => `${fmt(lang, v)} ${this.t('m')}`
+    // обставить комнату готовым набором
+    const sets: [RoomKind, TextKey][] = [['living', 'furnishLiving'], ['bedroom', 'furnishBedroom'], ['kitchen', 'furnishKitchen'], ['bath', 'furnishBath'], ['office', 'furnishOffice']]
+    const ask = this.furnishAsk?.room === id ? this.furnishAsk : null
+    const closeAsk = () => { this.furnishAsk = null; this.renderInspector() }
+    const furnishUi = ask
+      ? h('div', { class: 'confirm' }, h('p', {}, this.t('furnishAsk')), h('div', { class: 'btn-row' },
+          h('button', { class: 'btn btn-tape', type: 'button', id: 'furnish-replace', onclick: () => { this.furnishAsk = null; this.furnish(id, ask.kind, true) } }, this.t('furnishReplace')),
+          h('button', { class: 'btn', type: 'button', id: 'furnish-add', onclick: () => { this.furnishAsk = null; this.furnish(id, ask.kind, false) } }, this.t('furnishAdd')),
+          h('button', { class: 'btn', type: 'button', onclick: closeAsk }, this.t('cancel'))))
+      : h('div', { class: 'btn-row' }, ...sets.map(([kind, key]) => h('button', { class: 'btn btn-small', type: 'button', 'data-furnish': kind, onclick: () => {
+          const d = store.doc
+          if (d.items.some((i) => roomAt(d.rooms, i.x, i.z)?.id === id)) { this.furnishAsk = { room: id, kind }; this.renderInspector() } else this.furnish(id, kind, false)
+        } }, this.t(key))))
     return [
       this.head(`${this.t('room')} ${index + 1}`),
+      this.section(this.t('furnish'), furnishUi),
       this.section(this.t('size'),
         this.slider({ id: 'f-rw', label: this.t('width'), min: LIMITS.roomMin, max: 10, step: 0.05, get: (d) => { const r = cur(d); return r ? Math.min(10, r.w) : null }, set: (v) => store.update((d) => updateRoom(d, id, { w: v }), true), show: m }),
         this.slider({ id: 'f-rd', label: this.t('depth'), min: LIMITS.roomMin, max: 10, step: 0.05, get: (d) => { const r = cur(d); return r ? Math.min(10, r.d) : null }, set: (v) => store.update((d) => updateRoom(d, id, { d: v }), true), show: m }),
