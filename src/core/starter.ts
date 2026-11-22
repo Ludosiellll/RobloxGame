@@ -56,7 +56,7 @@ export function starterDoc(): Doc {
     walls: { h: 2.7, color: '#f1f0ea' },
     openings,
     light: { time: 0.42 },
-    scene: { mat: 'green', underlay: null },
+    scene: { mat: 'light', underlay: null },
     items,
   }
 }

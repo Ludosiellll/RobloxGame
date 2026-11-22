@@ -10,11 +10,8 @@ const html = readFileSync(join(DIST, 'index.html'), 'utf8')
 const parts = [...html.matchAll(/<!--page-->([\s\S]*?)<!--\/page-->/g)].map((m) => m[1].trim())
 if (parts.length !== 2) throw new Error('в index.html должны быть два блока <!--page-->')
 const css = readFileSync(join(DIST, 'assets/style.css'), 'utf8')
-// шрифты лежат рядом со страницей; их описание встраиваем в страницу, пути считаем от неё
-const fonts = readFileSync(join(DIST, 'fonts/fonts.css'), 'utf8').replace(/url\(/g, 'url(fonts/')
-const head = parts[0].replace(/\s*<link rel="stylesheet"[^>]*fonts\.css[^>]*>/, '')
-if (head === parts[0]) throw new Error('в index.html не найдена ссылка на fonts/fonts.css')
-const page = `${head}\n<style>\n${fonts}\n${css}\n</style>\n${parts[1]}\n<script type="module" src="app.js"></script>\n`
+const head = parts[0]
+const page = `${head}\n<style>\n${css}\n</style>\n${parts[1]}\n<script type="module" src="app.js"></script>\n`
 mkdirSync(join(ROOT, 'artifact'), { recursive: true })
 writeFileSync(join(ROOT, 'artifact/maket.html'), page)
 
@@ -24,7 +21,7 @@ let bytes = 0
 for (const f of walk(DIST)) {
   const rel = relative(DIST, f).split('\\').join('/')
   // страница и стили уже внутри maket.html; запасные копии декодера из сборки не нужны
-  if (rel === 'index.html' || rel.startsWith('assets/') || rel === 'fonts/fonts.css') continue
+  if (rel === 'index.html' || rel.startsWith('assets/')) continue
   files[rel] = relative(ROOT, f).split('\\').join('/')
   bytes += statSync(f).size
 }

@@ -19,7 +19,7 @@ export interface Item {
 }
 
 export type FloorKind = 'planks' | 'tile' | 'plain' | 'carpet'
-export type MatKind = 'green' | 'graphite' | 'blue' | 'sand'
+export type MatKind = 'light' | 'green' | 'graphite' | 'blue' | 'sand'
 
 /** Комната-прямоугольник: x, z — центр. */
 export interface Room {
@@ -70,7 +70,7 @@ export interface Doc {
 
 export const LIMITS = { roomMin: 1.2, roomMax: 14, hMin: 2.2, hMax: 4, scaleMin: 0.1, scaleMax: 5, liftMax: 4, openMin: 0.5, openMax: 3, underMin: 1, underMax: 80 }
 const FLOOR_KINDS: FloorKind[] = ['planks', 'tile', 'plain', 'carpet']
-const MAT_KINDS: MatKind[] = ['green', 'graphite', 'blue', 'sand']
+const MAT_KINDS: MatKind[] = ['light', 'green', 'graphite', 'blue', 'sand']
 const DEFAULT_FLOOR = { kind: 'planks' as FloorKind, color: '#c79a6b' }
 
 export function defaultDoc(): Doc {
@@ -80,7 +80,7 @@ export function defaultDoc(): Doc {
     walls: { h: 2.7, color: '#f1f0ea' },
     openings: [],
     light: { time: 0.42 },
-    scene: { mat: 'green', underlay: null },
+    scene: { mat: 'light', underlay: null },
     items: [],
   }
 }

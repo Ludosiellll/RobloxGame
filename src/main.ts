@@ -7,7 +7,7 @@ import { ModelLibrary } from './scene/models'
 import { Interact } from './scene/interact'
 import { UnderlayView } from './scene/underlay'
 import { ImageStore } from './images'
-import { dropItems } from './core/doc'
+import { dropItems, setScene } from './core/doc'
 import { isOrphan, type ModelsKnown } from './core/orphans'
 import { underlaySize } from './core/underlay'
 import { Store } from './store'
@@ -18,6 +18,16 @@ import { h } from './ui/dom'
 
 async function start(): Promise<void> {
   const store = new Store()
+  // Новый вид программы: прежний зелёный коврик стоял по умолчанию, поэтому один раз меняем его на светлый фон.
+  // Кто захочет коврик обратно, выберет его в свойствах сцены — второй раз мы его не тронем.
+  try {
+    if (localStorage.getItem('maket.look') !== '2') {
+      localStorage.setItem('maket.look', '2')
+      if (store.doc.scene.mat === 'green') store.amend((d) => setScene(d, { mat: 'light' }))
+    }
+  } catch {
+    // хранилище недоступно — оставляем как есть
+  }
   const stage = new Stage(document.getElementById('stage')!)
   const models = new ModelLibrary()
   const userModels = new UserModels(models)
@@ -93,7 +103,7 @@ async function start(): Promise<void> {
     })
   }
 
-  const ui = new Ui(uiRoot, { store, stage, interact, items, rooms, userModels, images, toaster })
+  const ui = new Ui(document.getElementById('app')!, uiRoot, { store, stage, interact, items, rooms, userModels, images, toaster })
   // старые картинки планов, на которые проект уже не ссылается, из хранилища убираем
   void images.keepOnly(store.doc.scene.underlay?.image ?? null)
   // обучение: при первом запуске предлагается само, потом открывается из справки
@@ -101,22 +111,16 @@ async function start(): Promise<void> {
     store,
     stage,
     items,
-    openScene: () => ui.openScene(),
+    showPanel: (which) => ui.showPanel(which),
     stopModes: () => {
       interact.stopDrawing()
       interact.stopCalibration()
     },
   })
-  uiRoot.append(tour.el)
+  document.getElementById('app')!.append(tour.el)
   ui.onTour = () => tour.welcome()
   document.documentElement.lang = store.lang
   store.on((c) => c === 'lang' && (document.documentElement.lang = store.lang))
-
-  // цифры на коврике рисуются шрифтом страницы: перерисовываем, когда он загрузится
-  void document.fonts?.ready.then(() => {
-    stage.mat.refresh(stage.maxAnisotropy)
-    stage.invalidate()
-  })
 
   tour.maybeWelcome()
 

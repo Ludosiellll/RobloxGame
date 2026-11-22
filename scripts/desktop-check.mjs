@@ -39,7 +39,8 @@ child.on('exit', () => {
   else {
     if (!(st.items > 0)) problems.push('в сцене нет предметов')
     if (st.loaded !== st.items) problems.push(`загружено моделей ${st.loaded} из ${st.items}`)
-    if (!(st.fonts >= 6)) problems.push(`загружено шрифтов ${st.fonts}`)
+    if (!st.layout) problems.push('окно собрано не полностью: нет меню, каталога или панели свойств')
+    if (!st.clip) problems.push('запись в обучении не проигрывается')
     if (!st.db.includes('maket-db')) problems.push('хранилище моделей не открылось')
     if (st.contextLost) problems.push('графика не работает: контекст потерян и не восстановился')
   }
@@ -51,5 +52,5 @@ child.on('exit', () => {
     console.error((ci ? '::error::' : '') + 'НЕ ПРОШЛО: ' + problems.join('; ') + ' ' + JSON.stringify(report).slice(0, 600))
     process.exit(1)
   }
-  console.log((ci ? '::notice::' : '') + `программа запустилась, сцена загружена: моделей ${st.loaded}, шрифтов ${st.fonts}, окно ${report.size.width}×${report.size.height}`)
+  console.log((ci ? '::notice::' : '') + `программа запустилась, сцена загружена: моделей ${st.loaded}, окно ${report.size.width}×${report.size.height}`)
 })

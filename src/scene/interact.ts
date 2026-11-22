@@ -15,7 +15,8 @@ import type { Stage } from './stage'
 import { UNDERLAY_Y } from './underlay'
 import { itemIdOf, type ItemsView } from './view'
 
-const YELLOW = '#f4c430'
+/** цвет выделения, ручек и размерных линий — тот же синий, что и в интерфейсе */
+const YELLOW = '#0f6cbd'
 const STEP = 0.05
 type Edge = 'n' | 's' | 'w' | 'e'
 

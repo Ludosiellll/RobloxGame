@@ -22,7 +22,7 @@ import type { ItemsView } from '../scene/view'
 import type { Store } from '../store'
 import type { UserModels } from '../userModels'
 import { h, ICON } from './dom'
-import { FanDeck } from './fandeck'
+import { ColorPicker } from './colorpicker'
 
 export class Toaster {
   readonly el = h('div', { class: 'toasts', role: 'status', 'aria-live': 'polite' })
@@ -52,32 +52,70 @@ interface Control {
 type Tab = CatId | 'my'
 const ACCEPT = '.glb,.gltf,.fbx,.obj,.mtl,.stl,.dae,.ply,.3mf,.zip,.bin,.png,.jpg,.jpeg,.webp'
 
+type PhonePanel = 'catalog' | 'props' | null
+interface MenuItem {
+  label: string
+  /** сочетание клавиш — показывается справа */
+  key?: string
+  id?: string
+  disabled?: boolean
+  run: () => void
+}
+
 export class Ui {
-  private readonly top = h('div', { class: 'top' })
-  private readonly inspector = h('aside', { class: 'inspector board' })
-  private readonly tray = h('section', { class: 'tray board' })
+  private readonly menubar = h('nav', { class: 'menubar', role: 'menubar' })
+  private readonly toolbar = h('div', { class: 'toolbar', role: 'toolbar' })
+  private readonly catalog = h('aside', { class: 'catalog' })
+  private readonly inspector = h('aside', { class: 'inspector' })
+  private readonly statusbar = h('footer', { class: 'statusbar' })
+  /** на телефоне каталог и свойства открываются по очереди — этими вкладками */
+  private readonly dock = h('div', { class: 'dock-tabs' })
   private readonly drop = h('div', { class: 'dropzone', hidden: true })
-  private readonly helpEl = h('div', { class: 'help board', hidden: true })
   /** полоса режима: видна всегда, пока включено рисование комнаты или разметка масштаба */
-  private readonly modeBar = h('div', { class: 'mode-bar board', hidden: true, role: 'status' })
-  private readonly fan: FanDeck
+  private readonly modeBar = h('div', { class: 'mode-bar', hidden: true, role: 'status' })
+  private readonly picker: ColorPicker
   private readonly file = h('input', { type: 'file', id: 'model-file', multiple: true, accept: ACCEPT, hidden: true })
   private readonly projectFile = h('input', { type: 'file', id: 'project-file', accept: '.zip', hidden: true })
   private readonly planFile = h('input', { type: 'file', id: 'plan-file', accept: 'image/png,image/jpeg,image/webp', hidden: true })
+  private tilesEl = h('div', { class: 'tiles' })
+  private search = ''
+  private phonePanel: PhonePanel = null
+  private menuOpen: string | null = null
   private tab: Tab = 'living'
   private controls: Control[] = []
   private signature = ''
-  private confirmReset = false
   /** в комнате уже есть мебель: ждём ответа, заменить её или добавить новую */
   private furnishAsk: { room: string; kind: RoomKind } | null = null
-  private trayOpen = true
   /** открыть обучение (подключается при запуске) */
   onTour: () => void = () => {}
-  private sceneOpen = false
 
-  constructor(root: HTMLElement, private readonly d: UiDeps) {
-    this.fan = new FanDeck(() => d.store.lang)
-    root.append(this.top, this.inspector, this.fan.el, this.tray, this.helpEl, d.toaster.el, this.modeBar, this.drop, this.file, this.projectFile, this.planFile)
+  /** app — корень окна (сетка: меню, панель инструментов, каталог, вид, свойства, строка состояния); overlay — слой поверх вида. */
+  constructor(private readonly app: HTMLElement, overlay: HTMLElement, private readonly d: UiDeps) {
+    this.picker = new ColorPicker(() => d.store.lang)
+    const view = overlay.parentElement ?? app
+    app.prepend(this.menubar, this.toolbar)
+    app.insertBefore(this.catalog, view)
+    view.after(this.inspector)
+    app.append(this.dock, this.statusbar, this.file, this.projectFile, this.planFile)
+    // выбор цвета занимает место свойств, пока открыт
+    this.picker.onToggle = () => {
+      this.signature = ''
+      this.renderInspector()
+    }
+    overlay.append(this.modeBar, d.toaster.el, this.drop)
+    // меню закрывается щелчком мимо и клавишей Esc
+    document.addEventListener('pointerdown', (e) => {
+      if (this.menuOpen && !this.menubar.contains(e.target as Node)) {
+        this.menuOpen = null
+        this.renderMenubar()
+      }
+    }, true)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.menuOpen) {
+        this.menuOpen = null
+        this.renderMenubar()
+      }
+    })
     this.file.addEventListener('change', () => {
       const files = [...(this.file.files ?? [])]
       this.file.value = ''
@@ -93,8 +131,8 @@ export class Ui {
       this.planFile.value = ''
       if (file) void this.loadPlan(file)
     })
-    d.interact.onCalibration = () => { this.renderInspector(); this.renderMode() }
-    d.interact.onDrawing = () => { this.renderInspector(); this.renderMode() }
+    d.interact.onCalibration = () => { this.renderInspector(); this.renderMode(); this.renderStatus() }
+    d.interact.onDrawing = () => { this.renderInspector(); this.renderMode(); this.renderToolbarState(); this.renderStatus() }
     // Ctrl+S — проект в файл, Ctrl+O — открыть файл проекта
     window.addEventListener('keydown', (e) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return
@@ -106,21 +144,28 @@ export class Ui {
         this.projectFile.click()
       }
     })
-    d.stage.onView(() => this.renderTopState())
+    d.stage.onView(() => this.renderToolbarState())
     this.bindDrop()
     d.store.on((c) => {
       if (c === 'lang') {
         this.renderMode()
-        this.fan.close()
-        this.renderTop()
-        this.renderTray()
+        this.picker.close()
+        this.renderMenubar()
+        this.renderToolbar()
+        this.renderCatalog()
+        this.renderDock()
         this.signature = ''
       }
-      if (c === 'selection') this.fan.close()
-      this.renderTopState()
+      if (c === 'selection') {
+        this.picker.close()
+        // на телефоне выбранное сразу показывает свои свойства
+        if (d.store.selection) this.showPanel('props')
+      }
+      this.renderToolbarState()
       this.renderInspector()
+      this.renderStatus()
     })
-    d.userModels.onChange = () => this.renderTray()
+    d.userModels.onChange = () => this.renderCatalog()
     const loaded = d.items.onLoaded
     d.items.onLoaded = (id) => {
       loaded(id)
@@ -129,60 +174,240 @@ export class Ui {
         this.renderInspector()
       }
     }
-    this.renderTop()
-    this.renderTray()
+    this.renderMenubar()
+    this.renderToolbar()
+    this.renderCatalog()
+    this.renderDock()
     this.renderInspector()
+    this.renderStatus()
   }
 
   private t(key: TextKey, vars?: Record<string, string | number>): string {
     return tr(this.d.store.lang, key, vars)
   }
 
-  // ---------- верхняя панель ----------
+  // ---------- меню ----------
+
+  private menus(): { id: string; label: string; items: (MenuItem | null)[] }[] {
+    const { store, stage, interact } = this.d
+    const sel = store.selection
+    return [
+      {
+        id: 'file',
+        label: this.t('menuFile'),
+        items: [
+          { label: this.t('menuNew'), id: 'menu-new', run: () => this.newProject() },
+          { label: this.t('loadDemo'), id: 'menu-demo', run: () => { store.replace(starterDoc()); stage.setView('3d') } },
+          null,
+          { label: this.t('menuOpen'), key: 'Ctrl+O', id: 'menu-open', run: () => this.projectFile.click() },
+          { label: this.t('menuSave'), key: 'Ctrl+S', id: 'menu-save', run: () => void this.saveProject() },
+          null,
+          { label: this.t('menuAddModel'), id: 'menu-model', run: () => this.file.click() },
+          { label: this.t('menuLoadPlan'), id: 'menu-plan', run: () => this.planFile.click() },
+          null,
+          { label: this.t('menuSnapshot'), id: 'menu-snapshot', run: () => void this.snapshot() },
+        ],
+      },
+      {
+        id: 'edit',
+        label: this.t('menuEdit'),
+        items: [
+          { label: this.t('undo'), key: 'Ctrl+Z', disabled: !store.canUndo, run: () => store.undo() },
+          { label: this.t('redo'), key: 'Ctrl+Shift+Z', disabled: !store.canRedo, run: () => store.redo() },
+          null,
+          { label: this.t('duplicate'), key: 'Ctrl+D', disabled: sel?.kind !== 'item', run: () => interact.duplicateSelected() },
+          { label: this.t('menuRotate'), key: 'R', disabled: sel?.kind !== 'item', run: () => interact.rotateSelected(90) },
+          { label: this.t('remove'), key: 'Delete', disabled: !sel, run: () => interact.deleteSelected() },
+        ],
+      },
+      {
+        id: 'view',
+        label: this.t('menuView'),
+        items: [
+          { label: this.t('menuView3d'), run: () => stage.setView('3d') },
+          { label: this.t('menuViewPlan'), run: () => stage.setView('plan') },
+          null,
+          { label: this.t('language'), id: 'menu-lang', run: () => store.setLang(store.lang === 'ru' ? 'en' : 'ru') },
+        ],
+      },
+      {
+        id: 'help',
+        label: this.t('menuHelp'),
+        items: [
+          { label: this.t('tourOpen'), id: 'menu-tour', run: () => this.onTour() },
+          { label: this.t('help'), id: 'menu-howto', run: () => this.showHelp() },
+          null,
+          { label: this.t('menuAbout'), id: 'menu-about', run: () => this.showAbout() },
+        ],
+      },
+    ]
+  }
+
+  private renderMenubar(): void {
+    const open = this.menuOpen
+    const toggle = (id: string) => {
+      this.menuOpen = this.menuOpen === id ? null : id
+      this.renderMenubar()
+    }
+    this.menubar.replaceChildren(
+      ...this.menus().map((m) =>
+        h(
+          'div',
+          { class: `menu${open === m.id ? ' is-open' : ''}` },
+          h('button', {
+            class: 'menu-btn',
+            type: 'button',
+            'aria-haspopup': 'true',
+            'aria-expanded': open === m.id ? 'true' : 'false',
+            'data-menu': m.id,
+            onclick: () => toggle(m.id),
+            // пока одно меню открыто, соседние открываются наведением — как в обычных программах
+            onpointerenter: (e: PointerEvent) => {
+              if (e.pointerType === 'mouse' && this.menuOpen && this.menuOpen !== m.id) toggle(m.id)
+            },
+          }, m.label),
+          open === m.id
+            ? h('div', { class: 'menu-list', role: 'menu' }, ...m.items.map((it) =>
+                it
+                  ? h('button', { class: 'menu-item', type: 'button', role: 'menuitem', id: it.id, disabled: it.disabled === true, onclick: () => { this.menuOpen = null; this.renderMenubar(); it.run() } }, h('span', {}, it.label), it.key ? h('span', { class: 'menu-key' }, it.key) : null)
+                  : h('div', { class: 'menu-sep', role: 'separator' }),
+              ))
+            : null,
+        ),
+      ),
+    )
+  }
+
+  /** Обычное окно с заголовком, текстом и кнопками. */
+  private dialog(title: string, body: (Node | string)[], buttons: { label: string; id?: string; kind?: 'primary' | 'danger'; run?: () => void }[]): void {
+    const close = (): void => {
+      veil.remove()
+      document.removeEventListener('keydown', onKey)
+    }
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') close()
+    }
+    const veil: HTMLElement = h(
+      'div',
+      { class: 'modal-veil', onpointerdown: (e: Event) => e.target === veil && close() },
+      h(
+        'div',
+        { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+        h('header', { class: 'modal-head' }, h('h2', {}, title), h('button', { class: 'icon-btn', type: 'button', 'aria-label': this.t('cancel'), title: this.t('cancel'), html: ICON.close, onclick: close })),
+        h('div', { class: 'modal-body' }, ...body),
+        h('footer', { class: 'modal-foot' }, ...buttons.map((b) => h('button', { class: `btn${b.kind === 'primary' ? ' btn-primary' : b.kind === 'danger' ? ' btn-danger' : ''}`, type: 'button', id: b.id, onclick: () => { close(); b.run?.() } }, b.label))),
+      ),
+    )
+    document.addEventListener('keydown', onKey)
+    this.app.append(veil)
+    veil.querySelector<HTMLElement>('.modal-foot .btn')?.focus()
+  }
+
+  private newProject(): void {
+    const { store, stage } = this.d
+    this.dialog(this.t('menuNew'), [h('p', {}, this.t('startOverConfirm'))], [
+      { label: this.t('startOverYes'), kind: 'danger', id: 'new-yes', run: () => { store.replace(defaultDoc()); stage.setView('3d') } },
+      { label: this.t('cancel') },
+    ])
+  }
+
+  private showHelp(): void {
+    this.dialog(this.t('helpTitle'), [h('ul', { class: 'help-list' }, ...(['helpMove', 'helpOrbit', 'helpRooms', 'helpPlan', 'helpImport', 'helpProject', 'helpKeys'] as TextKey[]).map((k) => h('li', {}, this.t(k))))], [
+      { label: this.t('tourOpen'), kind: 'primary', id: 'help-tour', run: () => this.onTour() },
+      { label: this.t('close') },
+    ])
+  }
+
+  private showAbout(): void {
+    this.dialog(this.t('menuAbout'), [h('p', {}, `${this.t('aboutName')} ${__APP_VERSION__}`), h('p', { class: 'hint' }, this.t('aboutText')), h('p', { class: 'hint' }, this.t('kitCredit'))], [{ label: this.t('close') }])
+  }
+
+  // ---------- панель инструментов ----------
 
   private undoBtn!: HTMLButtonElement
   private redoBtn!: HTMLButtonElement
+  private drawBtn!: HTMLButtonElement
   private viewBtns: HTMLButtonElement[] = []
 
-  private renderTop(): void {
-    const { store, stage } = this.d
-    this.undoBtn = h('button', { class: 'icon-btn board', type: 'button', title: `${this.t('undo')} (Ctrl+Z)`, 'aria-label': this.t('undo'), html: ICON.undo, onclick: () => store.undo() })
-    this.redoBtn = h('button', { class: 'icon-btn board', type: 'button', title: `${this.t('redo')} (Ctrl+Shift+Z)`, 'aria-label': this.t('redo'), html: ICON.redo, onclick: () => store.redo() })
+  private renderToolbar(): void {
+    const { store, stage, interact } = this.d
+    const tool = (id: string, icon: string, label: string, title: string, run: () => void): HTMLButtonElement =>
+      h('button', { class: 'tool', id, type: 'button', title, onclick: run }, h('span', { class: 'tool-ico', html: icon }), h('span', { class: 'tool-label' }, label))
+    const sep = () => h('span', { class: 'tool-sep', role: 'separator' })
+    this.undoBtn = h('button', { class: 'tool tool-icon', id: 'tool-undo', type: 'button', title: `${this.t('undo')} (Ctrl+Z)`, 'aria-label': this.t('undo'), html: ICON.undo, onclick: () => store.undo() })
+    this.redoBtn = h('button', { class: 'tool tool-icon', id: 'tool-redo', type: 'button', title: `${this.t('redo')} (Ctrl+Shift+Z)`, 'aria-label': this.t('redo'), html: ICON.redo, onclick: () => store.redo() })
+    this.drawBtn = tool('draw-room', ICON.pen, this.t('toolDraw'), this.t('toolDrawTitle'), () => this.toggleDraw())
     this.viewBtns = (['3d', 'plan'] as const).map((v) =>
-      h('button', { class: 'seg-btn', type: 'button', onclick: () => (stage.setView(v), this.renderTopState()) }, this.t(v === '3d' ? 'view3d' : 'viewPlan')),
+      h('button', { class: 'seg-btn', type: 'button', onclick: () => (stage.setView(v), this.renderToolbarState()) }, this.t(v === '3d' ? 'view3d' : 'viewPlan')),
     )
-    this.top.replaceChildren(
-      h('div', { class: 'top-left' }, h('div', { class: 'tape-wrap' }, h('h1', { class: 'tape' }, this.t('appName'))), this.undoBtn, this.redoBtn),
-      h(
-        'div',
-        { class: 'top-right' },
-        h('div', { class: 'seg board', role: 'group' }, ...this.viewBtns),
-        h('button', { class: 'btn board with-icon', type: 'button', onclick: () => void this.snapshot() }, h('span', { html: ICON.camera }), h('span', { class: 'btn-text' }, this.t('snapshot'))),
-        h('button', { class: 'btn board lang', type: 'button', onclick: () => store.setLang(store.lang === 'ru' ? 'en' : 'ru') }, store.lang === 'ru' ? 'EN' : 'RU'),
-        h('button', { class: 'icon-btn board', type: 'button', 'aria-label': this.t('help'), title: this.t('help'), html: ICON.help, onclick: () => this.toggleHelp() }),
-      ),
+    this.toolbar.replaceChildren(
+      this.undoBtn,
+      this.redoBtn,
+      sep(),
+      tool('tool-room', ICON.room, this.t('toolRoom'), this.t('addRoom'), () => this.addRoom()),
+      this.drawBtn,
+      tool('tool-door', ICON.doorSmall, this.t('door'), this.t('toolDoorTitle'), () => interact.addOpening('door')),
+      tool('tool-window', ICON.windowSmall, this.t('window'), this.t('toolWindowTitle'), () => interact.addOpening('window')),
+      sep(),
+      h('div', { class: 'seg', role: 'group', 'aria-label': this.t('menuView') }, ...this.viewBtns),
+      sep(),
+      tool('tool-snapshot', ICON.camera, this.t('snapshot'), this.t('menuSnapshot'), () => void this.snapshot()),
     )
-    this.renderTopState()
+    this.renderToolbarState()
   }
 
-  private renderTopState(): void {
+  private renderToolbarState(): void {
     this.undoBtn.disabled = !this.d.store.canUndo
     this.redoBtn.disabled = !this.d.store.canRedo
     this.viewBtns.forEach((b, i) => b.classList.toggle('is-on', (i === 0) === (this.d.stage.view === '3d')))
+    this.drawBtn.classList.toggle('is-on', this.d.interact.drawing)
+    this.drawBtn.setAttribute('aria-pressed', this.d.interact.drawing ? 'true' : 'false')
   }
 
-  private toggleHelp(): void {
-    if (!this.helpEl.hidden) {
-      this.helpEl.hidden = true
-      return
-    }
-    this.helpEl.replaceChildren(
-      h('header', { class: 'fan-head' }, h('div', { class: 'label' }, this.t('helpTitle')), h('button', { class: 'icon-btn', type: 'button', 'aria-label': this.t('cancel'), html: ICON.close, onclick: () => (this.helpEl.hidden = true) })),
-      h('ul', { class: 'help-list' }, ...(['helpMove', 'helpOrbit', 'helpRooms', 'helpPlan', 'helpImport', 'helpProject', 'helpKeys'] as TextKey[]).map((k) => h('li', {}, this.t(k)))),
-      h('div', { class: 'help-tour' }, h('button', { class: 'btn btn-tape', type: 'button', id: 'help-tour', onclick: () => { this.helpEl.hidden = true; this.onTour() } }, this.t('tourOpen'))),
-      h('p', { class: 'credit' }, this.t('kitCredit')),
+  /** Рисование комнаты включается и выключается одной кнопкой. */
+  private toggleDraw(): void {
+    const { interact, stage } = this.d
+    if (interact.drawing) return interact.stopDrawing()
+    stage.setView('plan')
+    interact.startDrawing()
+  }
+
+  /** Добавить комнату справа от самой правой. */
+  private addRoom(): void {
+    const { store } = this.d
+    const cur = store.doc
+    const right = cur.rooms.reduce((a, b) => (b.x + b.w / 2 > a.x + a.w / 2 ? b : a))
+    const id = store.newId('r')
+    store.update((d) => addRoom(d, id, { x: right.x + right.w / 2 + 1.75, z: right.z, w: 3.5, d: Math.min(right.d, 4) }))
+    store.select({ kind: 'room', id })
+  }
+
+  // ---------- строка состояния и вкладки телефона ----------
+
+  private renderStatus(): void {
+    const { store, interact } = this.d
+    const doc = store.doc
+    const sel = store.selection
+    const cal = interact.calibration
+    const hint: TextKey = interact.drawing ? 'statusDraw' : cal ? 'statusScale' : sel?.kind === 'item' ? 'statusItem' : sel?.kind === 'room' ? 'statusRoom' : sel?.kind === 'opening' ? 'statusOpening' : sel?.kind === 'underlay' ? 'statusPlan' : 'statusIdle'
+    this.statusbar.replaceChildren(
+      h('span', { class: 'status-hint' }, this.t(hint)),
+      h('span', { class: 'status-stats' }, this.t('statusStats', { rooms: doc.rooms.length, area: fmt(store.lang, floorArea(doc.rooms), 1), items: doc.items.length })),
     )
-    this.helpEl.hidden = false
+  }
+
+  private renderDock(): void {
+    const tab = (id: Exclude<PhonePanel, null>, label: string) =>
+      h('button', { class: `dock-tab${this.phonePanel === id ? ' is-on' : ''}`, type: 'button', 'data-dock': id, 'aria-pressed': this.phonePanel === id ? 'true' : 'false', onclick: () => this.showPanel(this.phonePanel === id ? null : id) }, label)
+    this.dock.replaceChildren(tab('catalog', this.t('catalog')), tab('props', this.t('properties')))
+  }
+
+  /** На телефоне на экране помещается одна панель: каталог или свойства. На компьютере видны обе. */
+  showPanel(which: PhonePanel): void {
+    this.phonePanel = which
+    this.catalog.classList.toggle('is-open', which === 'catalog')
+    this.inspector.classList.toggle('is-open', which === 'props')
+    this.renderDock()
   }
 
   private async snapshot(): Promise<void> {
@@ -195,20 +420,42 @@ export class Ui {
 
   // ---------- каталог ----------
 
-  private renderTray(): void {
-    const { store, interact, userModels } = this.d
+  private renderCatalog(): void {
+    const { store } = this.d
     const lang = store.lang
-    const tabs: { id: Tab; label: string }[] = [...CATEGORIES.map((c) => ({ id: c.id as Tab, label: lang === 'ru' ? c.ru : c.en })), { id: 'my', label: this.t('myModels') }]
-    const tabEls = tabs.map((t) =>
-      h('button', { class: `tab${t.id === this.tab ? ' is-on' : ''}${t.id === 'my' ? ' tab-my' : ''}`, type: 'button', role: 'tab', 'aria-selected': t.id === this.tab ? 'true' : 'false', onclick: () => ((this.tab = t.id), (this.trayOpen = true), this.renderTray()) }, t.label),
+    const cats: { id: Tab; label: string }[] = [...CATEGORIES.map((c) => ({ id: c.id as Tab, label: lang === 'ru' ? c.ru : c.en })), { id: 'my', label: this.t('myModels') }]
+    const select = h(
+      'select',
+      { id: 'catalog-cat', class: 'select', 'aria-label': this.t('category'), onchange: (e: Event) => { this.tab = (e.target as HTMLSelectElement).value as Tab; this.search = ''; this.renderCatalog() } },
+      ...cats.map((c) => h('option', { value: c.id, selected: c.id === this.tab }, c.label)),
     )
+    const search = h('input', { type: 'search', id: 'catalog-search', class: 'text', placeholder: this.t('search'), 'aria-label': this.t('search'), value: this.search, oninput: (e: Event) => { this.search = (e.target as HTMLInputElement).value; this.renderTiles() } })
+    this.tilesEl = h('div', { class: 'tiles' })
+    this.catalog.replaceChildren(h('div', { class: 'pane-head' }, this.t('catalog')), h('div', { class: 'catalog-tools' }, search, select), this.tilesEl)
+    this.renderTiles()
+  }
+
+  /** Плитки каталога: выбранная категория или, если что-то набрано в поиске, найденное по всему каталогу. */
+  private renderTiles(): void {
+    const { store, userModels } = this.d
+    const lang = store.lang
+    const q = this.search.trim().toLowerCase()
     const tiles: HTMLElement[] = []
     const T = 72
     const rows = Math.ceil(KIT_THUMB.count / KIT_THUMB.cols)
-    if (this.tab === 'my') {
-      tiles.push(
-        h('button', { class: 'tile tile-add', type: 'button', onclick: () => this.file.click() }, h('span', { class: 'thumb', html: ICON.upload }), h('span', { class: 'tile-name' }, this.t('addModel'))),
-      )
+    const kitTile = (k: (typeof KIT)[number]) =>
+      this.tile(lang === 'ru' ? k.ru : k.en, { kind: 'kit', key: k.key }, h('span', {
+        class: 'thumb',
+        style: {
+          backgroundImage: 'url(models/kit-thumbs.webp)',
+          backgroundSize: `${KIT_THUMB.cols * T}px ${rows * T}px`,
+          backgroundPosition: `-${(k.i % KIT_THUMB.cols) * T}px -${Math.floor(k.i / KIT_THUMB.cols) * T}px`,
+        },
+      }))
+    if (q) {
+      for (const k of KIT.filter((x) => (lang === 'ru' ? x.ru : x.en).toLowerCase().includes(q))) tiles.push(kitTile(k))
+    } else if (this.tab === 'my') {
+      tiles.push(h('button', { class: 'tile tile-add', type: 'button', onclick: () => this.file.click() }, h('span', { class: 'thumb', html: ICON.upload }), h('span', { class: 'tile-name' }, this.t('addModel'))))
       for (const m of userModels.list) {
         const tile = this.tile(m.name, { kind: 'user', key: m.id }, h('span', { class: 'thumb', style: m.thumb ? { backgroundImage: `url(${m.thumb})`, backgroundSize: 'contain' } : {} }))
         tile.append(
@@ -230,34 +477,10 @@ export class Ui {
         tiles.push(tile)
       }
     } else {
-      if (this.tab === 'build') {
-        for (const kind of ['door', 'window'] as const) {
-          tiles.push(h('button', { class: 'tile tile-draw', type: 'button', onclick: () => interact.addOpening(kind) }, h('span', { class: 'thumb', html: ICON[kind] }), h('span', { class: 'tile-name' }, this.t(kind))))
-        }
-      }
-      for (const k of KIT.filter((q) => q.cat === this.tab)) {
-        const thumb = h('span', {
-          class: 'thumb',
-          style: {
-            backgroundImage: 'url(models/kit-thumbs.webp)',
-            backgroundSize: `${KIT_THUMB.cols * T}px ${rows * T}px`,
-            backgroundPosition: `-${(k.i % KIT_THUMB.cols) * T}px -${Math.floor(k.i / KIT_THUMB.cols) * T}px`,
-          },
-        })
-        tiles.push(this.tile(lang === 'ru' ? k.ru : k.en, { kind: 'kit', key: k.key }, thumb))
-      }
+      for (const k of KIT.filter((x) => x.cat === this.tab)) tiles.push(kitTile(k))
     }
-    this.tray.classList.toggle('is-closed', !this.trayOpen)
-    this.tray.replaceChildren(
-      h(
-        'div',
-        { class: 'tabs', role: 'tablist' },
-        ...tabEls,
-        h('button', { class: `icon-btn tray-toggle${this.trayOpen ? '' : ' is-closed'}`, type: 'button', 'aria-label': this.t('catalog'), 'aria-expanded': this.trayOpen ? 'true' : 'false', html: ICON.chevron, onclick: () => ((this.trayOpen = !this.trayOpen), this.renderTray()) }),
-      ),
-      h('div', { class: 'tiles' }, ...tiles),
-      ...(this.tab === 'my' ? [h('p', { class: 'tray-hint' }, this.t('addModelHint'))] : []),
-    )
+    const note = q && !tiles.length ? this.t('searchEmpty') : !q && this.tab === 'my' ? this.t('addModelHint') : null
+    this.tilesEl.replaceChildren(...tiles, ...(note ? [h('p', { class: 'hint tiles-note' }, note)] : []))
   }
 
   /** Плитка каталога: щелчок добавляет в центр вида, мышью можно вытащить прямо в сцену. */
@@ -329,13 +552,7 @@ export class Ui {
     this.modeBar.hidden = text === null
     if (text === null) return
     const stop = interact.drawing ? () => interact.stopDrawing() : () => interact.stopCalibration()
-    this.modeBar.replaceChildren(h('span', {}, text), h('button', { class: 'btn btn-tape btn-small', type: 'button', id: 'mode-done', onclick: stop }, this.t(interact.drawing ? 'drawRoomDone' : 'cancel')))
-  }
-
-  /** Раскрыть панель сцены (на телефоне она свёрнута до заголовка). */
-  openScene(): void {
-    this.sceneOpen = true
-    this.renderInspector()
+    this.modeBar.replaceChildren(h('span', {}, text), h('button', { class: 'btn btn-small', type: 'button', id: 'mode-done', onclick: stop, onpointerup: (e: PointerEvent) => e.pointerType === 'touch' && stop() }, this.t(interact.drawing ? 'drawRoomDone' : 'cancel')))
   }
 
   /** Сохранить проект вместе со своими моделями в один файл. */
@@ -374,7 +591,7 @@ export class Ui {
     // обычная правка, а не новый проект: «Отменить» вернёт прежний
     store.update(() => kept)
     stage.setView('3d')
-    this.renderTray()
+    this.renderCatalog()
     if (failed) toaster.show(this.t('projectOpenedPartly'), 'error')
     else toaster.show(this.t('projectOpened'))
   }
@@ -410,7 +627,7 @@ export class Ui {
     }
     const res = await userModels.importFiles(files)
     this.tab = 'my'
-    this.renderTray()
+    this.renderCatalog()
     res.added.forEach((m, i) => {
       const c = this.d.stage.controls.target
       interact.addItem({ kind: 'user', key: m.id }, { x: c.x + i * 0.6, z: c.z + i * 0.6 })
@@ -430,10 +647,15 @@ export class Ui {
     const sel = store.selection
     const doc = store.doc
     let sig = `${store.lang}|${sel?.kind ?? 'scene'}|${sel?.id ?? ''}`
-    if (!sel) sig += `|${doc.rooms.map((r) => r.id).join(',')}|${this.confirmReset}|${doc.scene.underlay !== null}|${this.d.interact.drawing}`
+    if (!sel) sig += `|${doc.rooms.map((r) => r.id).join(',')}|${doc.scene.underlay !== null}`
     if (sel?.kind === 'underlay') sig += `|${this.d.interact.calibration?.points.length ?? 'off'}`
     if (sel?.kind === 'item') sig += `|${items.template(sel.id)?.slots.join(',') ?? '…'}`
     if (sel?.kind === 'room') sig += `|${doc.rooms.length}|${this.furnishAsk?.room === sel.id ? this.furnishAsk.kind : ''}`
+    if (this.picker.isOpen) {
+      if (this.inspector.firstElementChild !== this.picker.el) this.inspector.replaceChildren(this.picker.el)
+      this.signature = ''
+      return
+    }
     if (sig !== this.signature) {
       this.signature = sig
       this.controls = []
@@ -441,8 +663,6 @@ export class Ui {
       this.inspector.replaceChildren(...body)
       this.inspector.scrollTop = 0
     }
-    // на телефоне панель сцены свёрнута до заголовка, пока её не открыли или что-то не выбрали
-    this.inspector.classList.toggle('is-min', !sel && !this.sceneOpen)
     for (const c of this.controls) c.sync?.(doc)
   }
 
@@ -479,7 +699,7 @@ export class Ui {
     const btn = h('button', { class: 'chip', type: 'button' }, sw, h('span', { class: 'chip-label' }, label), code)
     btn.addEventListener('click', () => {
       const cur = get(this.d.store.doc) ?? '#cccccc'
-      this.fan.open({ title: label, current: cur, onPick, onReset, palette: () => projectColors(this.d.store.doc) })
+      this.picker.open({ title: label, current: cur, onPick, onReset, palette: () => projectColors(this.d.store.doc) })
     })
     this.controls.push({
       el: btn,
@@ -499,7 +719,7 @@ export class Ui {
     if (subEl && live) this.controls.push({ el: subEl, sync: (d) => { subEl.textContent = live(d) } })
     return h(
       'header',
-      { class: 'insp-head', onclick: () => { if (!store.selection) { this.sceneOpen = !this.sceneOpen; this.renderInspector() } } },
+      { class: 'insp-head' },
       h('div', {}, h('h2', {}, title), subEl),
       store.selection ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': this.t('cancel'), html: ICON.close, onclick: () => store.select(null) }) : null,
     )
@@ -508,7 +728,7 @@ export class Ui {
   private sceneView(doc: Doc): HTMLElement[] {
     const { store, interact } = this.d
     const lang = store.lang
-    const mats: [MatKind, TextKey][] = [['green', 'matGreen'], ['graphite', 'matGraphite'], ['blue', 'matBlue'], ['sand', 'matSand']]
+    const mats: [MatKind, TextKey][] = [['light', 'matLight'], ['graphite', 'matGraphite'], ['green', 'matGreen'], ['blue', 'matBlue'], ['sand', 'matSand']]
     const matBtns = mats.map(([kind, key]) => {
       const b = h('button', { class: 'mat-sw', type: 'button', title: this.t(key), 'aria-label': this.t(key), style: { background: MAT_COLORS[kind].base }, onclick: () => store.update((d) => setScene(d, { mat: kind })) })
       this.controls.push({ el: b, sync: (d) => b.classList.toggle('is-on', d.scene.mat === kind) })
@@ -519,30 +739,7 @@ export class Ui {
       this.controls.push({ el: meta, sync: (d) => { const q = d.rooms.find((x) => x.id === r.id); if (q) meta.textContent = `${fmt(lang, q.w)} × ${fmt(lang, q.d)} ${this.t('m')}` } })
       return h('button', { class: 'row-btn', type: 'button', onclick: () => store.select({ kind: 'room', id: r.id }) }, h('span', {}, `${this.t('room')} ${i + 1}`), meta)
     })
-    const addRoomBtn = h('button', { class: 'btn with-icon', type: 'button', onclick: () => {
-      const cur = store.doc
-      const right = cur.rooms.reduce((a, b) => (b.x + b.w / 2 > a.x + a.w / 2 ? b : a))
-      const id = store.newId('r')
-      store.update((d) => addRoom(d, id, { x: right.x + right.w / 2 + 1.75, z: right.z, w: 3.5, d: Math.min(right.d, 4) }))
-      store.select({ kind: 'room', id })
-    } }, h('span', { html: ICON.plus }), this.t('addRoom'))
-
-    // комнату можно добавить готовой или нарисовать мышью (в том числе поверх плана квартиры)
-    const roomTools = interact.drawing
-      ? h('div', { class: 'confirm' }, h('p', {}, this.t('drawRoomHint')), h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-tape', type: 'button', id: 'draw-done', onclick: () => interact.stopDrawing() }, this.t('drawRoomDone'))))
-      : h('div', { class: 'btn-row' }, addRoomBtn, h('button', { class: 'btn with-icon', type: 'button', id: 'draw-room', onclick: () => { this.d.stage.setView('plan'); interact.startDrawing() } }, h('span', { html: ICON.pen }), this.t('drawRoom')))
-
-    const project = this.confirmReset
-      ? h('div', { class: 'confirm' }, h('p', {}, this.t('startOverConfirm')), h('div', { class: 'btn-row' },
-          h('button', { class: 'btn btn-danger', type: 'button', onclick: () => { this.confirmReset = false; store.replace(defaultDoc()); this.d.stage.setView('3d') } }, this.t('startOverYes')),
-          h('button', { class: 'btn', type: 'button', onclick: () => { this.confirmReset = false; this.renderInspector() } }, this.t('cancel'))))
-      : h('div', { class: 'btn-stack' },
-          h('div', { class: 'btn-row' },
-            h('button', { class: 'btn', type: 'button', id: 'save-project', onclick: () => void this.saveProject() }, this.t('saveProject')),
-            h('button', { class: 'btn', type: 'button', id: 'open-project', onclick: () => this.projectFile.click() }, this.t('openProject'))),
-          h('div', { class: 'btn-row' },
-            h('button', { class: 'btn', type: 'button', onclick: () => { this.confirmReset = true; this.renderInspector() } }, this.t('startOver')),
-            h('button', { class: 'btn', type: 'button', onclick: () => { store.replace(starterDoc()); this.d.stage.setView('3d') } }, this.t('loadDemo'))))
+    const addRoomBtn = h('button', { class: 'btn with-icon', type: 'button', id: 'add-room', onclick: () => this.addRoom() }, h('span', { html: ICON.plus }), this.t('addRoom'))
 
     const planMeta = h('span', { class: 'code' })
     this.controls.push({ el: planMeta, sync: (d) => { const u = d.scene.underlay; if (u) { const size = underlaySize(u); planMeta.textContent = `${fmt(lang, size.w)} × ${fmt(lang, size.d)} ${this.t('m')}` } } })
@@ -561,9 +758,8 @@ export class Ui {
         this.slider({ id: 'f-wallh', label: this.t('wallHeight'), min: LIMITS.hMin, max: LIMITS.hMax, step: 0.05, get: (d) => d.walls.h, set: (v) => store.update((d) => setWalls(d, { h: v }), true), show: (v) => `${fmt(lang, v)} ${this.t('m')}` }),
         this.chip(this.t('wallColor'), (d) => d.walls.color, (hex) => store.update((d) => setWalls(d, { color: hex }))),
       ),
-      this.section(this.t('rooms'), ...roomRows, roomTools),
+      this.section(this.t('rooms'), ...roomRows, addRoomBtn),
       this.section(this.t('plan'), ...plan),
-      this.section(this.t('project'), project, h('button', { class: 'btn lang-inline', type: 'button', onclick: () => store.setLang(lang === 'ru' ? 'en' : 'ru') }, this.t('language'))),
     ]
   }
 
@@ -583,7 +779,7 @@ export class Ui {
       const form = h('form', { class: 'confirm' },
         h('label', { for: 'plan-distance' }, this.t('planCalDistance')),
         input,
-        h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-tape', type: 'submit', id: 'plan-apply' }, this.t('planCalApply')), cancel))
+        h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-primary', type: 'submit', id: 'plan-apply' }, this.t('planCalApply')), cancel))
       form.addEventListener('submit', (e) => {
         e.preventDefault()
         const meters = Number(input.value.trim().replace(',', '.'))
@@ -663,7 +859,7 @@ export class Ui {
         this.slider({ id: 'f-lift', label: this.t('lift'), min: 0, max: 2.6, step: 0.05, get: (d) => cur(d)?.y ?? null, set: (v) => store.update((d) => updateItem(d, id, { y: v, lift: v > 0 }), true), show: (v) => `${Math.round(v * 100)} ${this.t('cm')}` }),
       ),
       slots.length ? this.section(this.t('colors'), h('div', { class: 'chip-list', 'data-tour': 'colors' }, ...colorRows)) : null,
-      this.section(this.t('project'),
+      this.section(this.t('actions'),
         h('div', { class: 'btn-row' },
           h('button', { class: 'btn with-icon', type: 'button', title: 'Ctrl+D', onclick: () => interact.duplicateSelected() }, h('span', { html: ICON.copy }), this.t('duplicate')),
           h('button', { class: 'btn btn-danger with-icon', type: 'button', title: 'Delete', onclick: () => interact.deleteSelected() }, h('span', { html: ICON.trash }), this.t('remove'))),
@@ -713,7 +909,7 @@ export class Ui {
     const closeAsk = () => { this.furnishAsk = null; this.renderInspector() }
     const furnishUi = ask
       ? h('div', { class: 'confirm' }, h('p', {}, this.t('furnishAsk')), h('div', { class: 'btn-row' },
-          h('button', { class: 'btn btn-tape', type: 'button', id: 'furnish-replace', onclick: () => { this.furnishAsk = null; this.furnish(id, ask.kind, true) } }, this.t('furnishReplace')),
+          h('button', { class: 'btn btn-primary', type: 'button', id: 'furnish-replace', onclick: () => { this.furnishAsk = null; this.furnish(id, ask.kind, true) } }, this.t('furnishReplace')),
           h('button', { class: 'btn', type: 'button', id: 'furnish-add', onclick: () => { this.furnishAsk = null; this.furnish(id, ask.kind, false) } }, this.t('furnishAdd')),
           h('button', { class: 'btn', type: 'button', onclick: closeAsk }, this.t('cancel'))))
       : h('div', { class: 'btn-row' }, ...sets.map(([kind, key]) => h('button', { class: 'btn btn-small', type: 'button', 'data-furnish': kind, onclick: () => {
@@ -732,7 +928,7 @@ export class Ui {
         h('div', { class: 'seg seg-wide', role: 'group' }, ...kindBtns),
         this.chip(this.t('floorColor'), (d) => cur(d)?.floor.color ?? null, (hex) => store.update((d) => updateRoom(d, id, { floor: { color: hex } }))),
       ),
-      doc.rooms.length > 1 ? this.section(this.t('project'), h('button', { class: 'btn btn-danger with-icon', type: 'button', onclick: () => interact.deleteSelected() }, h('span', { html: ICON.trash }), this.t('deleteRoom'))) : null,
+      doc.rooms.length > 1 ? this.section(this.t('actions'), h('button', { class: 'btn btn-danger with-icon', type: 'button', onclick: () => interact.deleteSelected() }, h('span', { html: ICON.trash }), this.t('deleteRoom'))) : null,
     ].filter((x): x is HTMLElement => !!x)
   }
 
@@ -757,7 +953,7 @@ export class Ui {
           show: (v) => `${Math.round(v * 100)} ${this.t('cm')}`,
         }),
       ),
-      this.section(this.t('project'), h('button', { class: 'btn btn-danger with-icon', type: 'button', onclick: () => interact.deleteSelected() }, h('span', { html: ICON.trash }), this.t('remove'))),
+      this.section(this.t('actions'), h('button', { class: 'btn btn-danger with-icon', type: 'button', onclick: () => interact.deleteSelected() }, h('span', { html: ICON.trash }), this.t('remove'))),
     ]
   }
 }

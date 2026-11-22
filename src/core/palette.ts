@@ -103,7 +103,7 @@ export const DECKS: Deck[] = [
       s('#8aa76f', 'Мох', 'Moss'),
       s('#6c8f5a', 'Папоротник', 'Fern'),
       s('#4f7550', 'Лес', 'Forest'),
-      s('#2f6257', 'Макетный коврик', 'Cutting mat'),
+      s('#2f6257', 'Малахит', 'Malachite'),
       s('#5f7f78', 'Эвкалипт', 'Eucalyptus'),
       s('#3f5b55', 'Хвоя', 'Pine needle'),
       s('#9aa66a', 'Олива', 'Olive'),

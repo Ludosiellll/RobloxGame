@@ -4,6 +4,7 @@
 const { app, BrowserWindow, protocol, shell, Menu, screen } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')
+const { byteRange } = require('./range.cjs')
 
 const DIST = path.join(__dirname, '..', 'dist')
 const TYPES = {
@@ -15,7 +16,7 @@ const TYPES = {
   '.webp': 'image/webp',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
-  '.woff2': 'font/woff2',
+  '.mp4': 'video/mp4',
   '.txt': 'text/plain; charset=utf-8',
 }
 
@@ -34,7 +35,12 @@ function serve() {
     if (file !== DIST && !file.startsWith(DIST + path.sep)) return new Response('forbidden', { status: 403 })
     try {
       const data = await fs.promises.readFile(file)
-      return new Response(data, { headers: { 'content-type': TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream' } })
+      const type = TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream'
+      // видео проигрыватель запрашивает кусками
+      const part = byteRange(request.headers.get('range'), data.length)
+      if (part === 'bad') return new Response(null, { status: 416, headers: { 'content-range': `bytes */${data.length}` } })
+      if (part) return new Response(data.subarray(part.start, part.end + 1), { status: 206, headers: { 'content-type': type, 'accept-ranges': 'bytes', 'content-range': `bytes ${part.start}-${part.end}/${data.length}` } })
+      return new Response(data, { headers: { 'content-type': type, 'accept-ranges': 'bytes' } })
     } catch {
       return new Response('not found', { status: 404 })
     }
@@ -72,7 +78,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 620,
     title: 'Макет',
-    backgroundColor: '#1f443c',
+    backgroundColor: '#f3f3f3',
     autoHideMenuBar: true,
     show: false,
     icon: path.join(__dirname, 'icon.png'),
@@ -99,7 +105,7 @@ function createWindow() {
     // ждём, пока загрузятся все модели сцены (но не дольше 60 с), снимаем окно и пишем рядом состояние
     const errors = []
     win.webContents.on('console-message', (e) => (e.level === 'warning' || e.level === 'error') && errors.push(e.message))
-    const probe = `(async () => { const m = window.__maket; if (!m) return null; const runs = Number(localStorage.getItem('maket.probe') ?? 0); return { items: m.store.doc.items.length, loaded: m.items.pickables().filter((g) => !g.children.some((c) => c.userData.ghost)).length, fonts: [...document.fonts].filter((f) => f.status === 'loaded').length, lang: m.store.lang, runsBefore: runs, db: (await indexedDB.databases()).map((d) => d.name), contextLost: m.stage.renderer.getContext().isContextLost() } })()`
+    const probe = `(async () => { const m = window.__maket; if (!m) return null; const runs = Number(localStorage.getItem('maket.probe') ?? 0); return { items: m.store.doc.items.length, loaded: m.items.pickables().filter((g) => !g.children.some((c) => c.userData.ghost)).length, layout: !!(document.querySelector('.menubar .menu-btn') && document.querySelector('.catalog .tile') && document.querySelector('.inspector .sec')), clip: await new Promise((done) => { const v = document.createElement('video'); v.muted = true; v.preload = 'auto'; const end = (ok) => { v.removeAttribute('src'); done(ok) }; v.onloadeddata = () => end(v.videoWidth > 0); v.onerror = () => end(false); setTimeout(() => end(false), 5000); v.src = 'tour/look-ru.mp4' }), lang: m.store.lang, runsBefore: runs, db: (await indexedDB.databases()).map((d) => d.name), contextLost: m.stage.renderer.getContext().isContextLost() } })()`
     const started = Date.now()
     const finish = async (state) => {
       await win.webContents.executeJavaScript(`localStorage.setItem('maket.probe', String(Number(localStorage.getItem('maket.probe') ?? 0) + 1))`).catch(() => {})
@@ -112,7 +118,7 @@ function createWindow() {
     }
     const poll = async () => {
       const state = await win.webContents.executeJavaScript(probe).catch(() => null)
-      const ready = state && state.items > 0 && state.loaded === state.items && state.fonts >= 6 && !state.contextLost
+      const ready = state && state.items > 0 && state.loaded === state.items && state.layout && state.clip && !state.contextLost
       if (process.env.MAKET_TRACE) console.log(Date.now() - started, JSON.stringify(state))
       if (ready) setTimeout(() => void finish(state), 2000)
       else if (Date.now() - started > 60000) void finish(state)

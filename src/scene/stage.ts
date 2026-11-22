@@ -27,7 +27,7 @@ export class Stage {
   private dirty = true
   private readonly frameHooks: Array<(dt: number) => boolean | void> = []
   private last = performance.now()
-  private matKind: MatKind = 'green'
+  private matKind: MatKind = 'light'
   private time = 0.42
   private tween: { from: THREE.Spherical; to: THREE.Spherical; fromT: THREE.Vector3; toT: THREE.Vector3; t: number } | null = null
   view: ViewMode = '3d'
@@ -131,11 +131,8 @@ export class Stage {
     const h = Math.max(1, this.host.clientHeight)
     this.renderer.setSize(w, h)
     this.camera.aspect = w / h
-    // сдвигаем кадр, чтобы центр сцены был в свободной части экрана, а не под панелями
-    const phone = w <= 760
-    const right = phone ? 0 : 304
-    const bottom = phone ? Math.min(230, h * 0.3) : 150
-    this.camera.setViewOffset(w, h, right / 2, bottom / 2, w, h)
+    // панели стоят рядом с видом, а не поверх него: кадр ничем не закрыт и сдвигать его не нужно
+    this.camera.clearViewOffset()
     this.camera.updateProjectionMatrix()
     this.invalidate()
   }
@@ -165,7 +162,7 @@ export class Stage {
   }
 
   private applyMat(): void {
-    this.mat.setKind(this.matKind, this.maxAnisotropy)
+    this.mat.setKind(this.matKind)
     this.applyLight()
   }
 

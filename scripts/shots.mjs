@@ -18,7 +18,8 @@ const wait = waitIdx >= 0 ? Number(args[waitIdx + 1]) : 1500
 
 const { server, url } = await serve(join(ROOT, 'dist'))
 const browser = await chromium.launch({ args: GL_ARGS })
-const context = await browser.newContext(phone ? { viewport: { width: 400, height: 800 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 } : { viewport: { width: 1440, height: 860 }, deviceScaleFactor: 1 })
+const locale = args.includes('--ru') ? 'ru-RU' : 'en-US'
+const context = await browser.newContext(phone ? { viewport: { width: 400, height: 800 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1, locale } : { viewport: { width: 1440, height: 860 }, deviceScaleFactor: 1, locale })
 // обучение предлагается при первом запуске; в обычных снимках оно мешает, поэтому показывается только с --tour
 if (!args.includes('--tour')) await context.addInitScript(() => { try { localStorage.setItem('maket.tour', 'done') } catch {} })
 const page = await context.newPage()

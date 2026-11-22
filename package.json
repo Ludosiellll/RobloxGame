@@ -15,7 +15,8 @@
     "artifact": "node scripts/artifact.mjs",
     "icon": "node scripts/icon.mjs",
     "desktop": "electron desktop/main.cjs",
-    "dist:win": "electron-builder --win --x64 --publish never"
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "clips": "node scripts/clips.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
@@ -43,6 +44,7 @@
       "dist/**/*",
       "!dist/assets/draco_*",
       "desktop/main.cjs",
+      "desktop/range.cjs",
       "desktop/icon.png",
       "package.json"
     ],

@@ -58,7 +58,7 @@ export class ItemsView {
     this.entries.set(item.id, e)
     this.group.add(group)
     // пока модель грузится — полупрозрачная заготовка
-    const ghost = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5).translate(0, 0.25, 0), new THREE.MeshStandardMaterial({ color: '#f4c430', transparent: true, opacity: 0.35 }))
+    const ghost = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5).translate(0, 0.25, 0), new THREE.MeshStandardMaterial({ color: '#8fa3b8', transparent: true, opacity: 0.4 }))
     ghost.userData.ghost = true
     group.add(ghost)
     this.models

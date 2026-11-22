@@ -133,4 +133,10 @@ describe('doc', () => {
     for (const edge of [r.x - r.w / 2, r.x + r.w / 2]) expect(Math.abs(edge * 1000 - Math.round(edge * 1000))).toBeLessThan(1e-6)
     expect(r.w).toBe(2.5)
   })
+
+  it('новый проект открывается на нейтральном светлом фоне; прежние фоны остаются доступны', () => {
+    expect(defaultDoc().scene.mat).toBe('light')
+    for (const mat of ['light', 'green', 'graphite', 'blue', 'sand'] as const) expect(sanitizeDoc({ ...defaultDoc(), scene: { mat, underlay: null } }).scene.mat).toBe(mat)
+    expect(sanitizeDoc({ ...defaultDoc(), scene: { mat: 'rozovyj', underlay: null } }).scene.mat).toBe('light')
+  })
 })

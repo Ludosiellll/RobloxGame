@@ -1,11 +1,12 @@
-// Веер образцов цвета: полоски расходятся от заклёпки, как на настоящей раскладке краски.
+// Выбор цвета: сетка образцов по группам, сочетания (триада, контраст, соседние, оттенки) и свой цвет.
+// Открывается внутри панели свойств вместо её содержимого и не закрывает сцену.
 
 import { harmonies, type HarmonyId } from '../core/color'
 import { tr, type Lang, type TextKey } from '../core/i18n'
-import { DECKS, findSwatch, isDark } from '../core/palette'
+import { DECKS, findSwatch } from '../core/palette'
 import { h, ICON } from './dom'
 
-export interface FanRequest {
+export interface ColorRequest {
   title: string
   current: string
   onPick: (hex: string) => void
@@ -16,34 +17,37 @@ export interface FanRequest {
 
 const MIX_NAMES: Record<HarmonyId, TextKey> = { triad: 'mixTriad', contrast: 'mixContrast', analogous: 'mixAnalogous', shades: 'mixShades' }
 
-export class FanDeck {
+export class ColorPicker {
   readonly el: HTMLElement
-  private req: FanRequest | null = null
-  private deck = 0
+  private req: ColorRequest | null = null
   private current = '#ffffff'
   /** основа сочетаний: от неё считаются триада, контраст, соседние и оттенки */
   private base = '#ffffff'
 
+  /** вызывается, когда выбор цвета открылся или закрылся: панель свойств перерисовывается */
+  onToggle: () => void = () => {}
+
   constructor(private readonly lang: () => Lang) {
-    this.el = h('section', { class: 'fan board', hidden: true })
+    this.el = h('section', { class: 'picker', hidden: true })
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !this.el.hidden) this.close()
     })
   }
 
-  open(req: FanRequest): void {
+  open(req: ColorRequest): void {
     this.req = req
     this.current = req.current.toLowerCase()
     this.base = this.current
-    const at = DECKS.findIndex((d) => d.swatches.some((w) => w.hex === this.current))
-    if (at >= 0) this.deck = at
     this.el.hidden = false
     this.render()
+    this.onToggle()
   }
 
   close(): void {
+    if (this.el.hidden) return
     this.el.hidden = true
     this.req = null
+    this.onToggle()
   }
 
   get isOpen(): boolean {
@@ -60,29 +64,27 @@ export class FanDeck {
     const req = this.req
     if (!req) return
     const lang = this.lang()
-    const deck = DECKS[this.deck]
-    const n = deck.swatches.length
-    const spread = 106
-    const strips = deck.swatches.map((w, i) => {
-      const angle = -spread / 2 + (spread * i) / (n - 1)
-      const selected = w.hex === this.current
-      return h(
-        'button',
-        {
-          class: `strip${selected ? ' is-on' : ''}${isDark(w.hex) ? ' is-dark' : ''}`,
-          type: 'button',
-          title: `${lang === 'ru' ? w.ru : w.en} ${w.hex}`,
-          'aria-pressed': selected ? 'true' : 'false',
-          style: { background: w.hex, '--a': `${angle}deg`, zIndex: String(selected ? 40 : i) },
-          onclick: () => this.pick(w.hex),
-        },
-        h('span', { class: 'strip-name' }, lang === 'ru' ? w.ru : w.en),
-      )
-    })
+    const name = (ru: string, en: string) => (lang === 'ru' ? ru : en)
+    // образцы: каждая группа — строка сетки
+    const groups = DECKS.map((deck) =>
+      h(
+        'div',
+        { class: 'swatch-group' },
+        h('div', { class: 'swatch-title' }, name(deck.ru, deck.en)),
+        h(
+          'div',
+          { class: 'swatches' },
+          ...deck.swatches.map((w) => {
+            const on = w.hex === this.current
+            return h('button', { class: `swatch${on ? ' is-on' : ''}`, type: 'button', title: `${name(w.ru, w.en)} ${w.hex}`, 'aria-label': `${name(w.ru, w.en)} ${w.hex}`, 'aria-pressed': on ? 'true' : 'false', style: { background: w.hex }, onclick: () => this.pick(w.hex) })
+          }),
+        ),
+      ),
+    )
     const known = findSwatch(this.current)
     const hexInput = h('input', {
       class: 'hex',
-      id: 'fan-hex',
+      id: 'picker-hex',
       value: this.current,
       maxLength: 7,
       spellcheck: false,
@@ -94,15 +96,15 @@ export class FanDeck {
         else (e.target as HTMLInputElement).value = this.current
       },
     })
-    const native = h('input', { type: 'color', id: 'fan-native', class: 'native', value: this.current, 'aria-label': tr(lang, 'custom'), oninput: (e: Event) => this.pick((e.target as HTMLInputElement).value) })
+    const native = h('input', { type: 'color', id: 'picker-native', class: 'native', value: this.current, 'aria-label': tr(lang, 'custom'), title: tr(lang, 'custom'), oninput: (e: Event) => this.pick((e.target as HTMLInputElement).value) })
     // сочетания: основа — цвет этой вещи или любой цвет из проекта; образец красит вещь
     const used = (req.palette?.() ?? []).filter((c) => c !== this.base).slice(0, 8)
     const baseChip = (hex: string, on: boolean) =>
       h('button', { class: `base-chip${on ? ' is-on' : ''}`, type: 'button', title: `${tr(lang, 'mixUseBase')} ${hex}`, 'aria-label': `${tr(lang, 'mixUseBase')} ${hex}`, 'aria-pressed': on ? 'true' : 'false', style: { background: hex }, onclick: () => ((this.base = hex), this.render()) })
     const mix = h(
       'div',
-      { class: 'fan-mix' },
-      h('div', { class: 'mix-head' }, h('span', { class: 'label' }, tr(lang, 'mixTitle')), h('span', { class: 'mix-base' }, h('span', {}, tr(lang, 'mixBase')), baseChip(this.base, true), ...used.map((c) => baseChip(c, false)))),
+      { class: 'picker-mix' },
+      h('div', { class: 'mix-head' }, h('span', { class: 'swatch-title' }, tr(lang, 'mixTitle')), h('span', { class: 'mix-base' }, h('span', {}, tr(lang, 'mixBase')), baseChip(this.base, true), ...used.map((c) => baseChip(c, false)))),
       ...harmonies(this.base).map((g) =>
         h(
           'div',
@@ -113,23 +115,18 @@ export class FanDeck {
       ),
     )
     this.el.replaceChildren(
-      h('header', { class: 'fan-head' }, h('div', { class: 'label' }, req.title), h('button', { class: 'icon-btn', type: 'button', 'aria-label': tr(lang, 'cancel'), html: ICON.close, onclick: () => this.close() })),
-      h(
-        'div',
-        { class: 'fan-tabs', role: 'tablist' },
-        ...DECKS.map((d, i) => h('button', { class: `fan-tab${i === this.deck ? ' is-on' : ''}`, type: 'button', onclick: () => ((this.deck = i), this.render()) }, lang === 'ru' ? d.ru : d.en)),
-      ),
-      h('div', { class: 'fan-stage' }, ...strips, h('span', { class: 'rivet' })),
-      h(
-        'div',
-        { class: 'fan-foot' },
-        h('span', { class: 'fan-chip', style: { background: this.current } }),
-        h('div', { class: 'fan-name' }, known ? (lang === 'ru' ? known.ru : known.en) : tr(lang, 'custom')),
-        hexInput,
-        h('label', { class: 'native-wrap', title: tr(lang, 'custom') }, native),
-        req.onReset ? h('button', { class: 'btn btn-small', type: 'button', onclick: () => (req.onReset?.(), this.close()) }, tr(lang, 'resetColor')) : null,
-      ),
+      h('header', { class: 'picker-head' }, h('button', { class: 'icon-btn', type: 'button', id: 'picker-back', 'aria-label': tr(lang, 'back'), title: tr(lang, 'back'), html: ICON.back, onclick: () => this.close() }), h('div', { class: 'picker-title' }, req.title)),
+      h('div', { class: 'picker-body' }, ...groups),
       mix,
+      h(
+        'div',
+        { class: 'picker-foot' },
+        h('span', { class: 'picker-now', style: { background: this.current } }),
+        h('span', { class: 'picker-name' }, known ? name(known.ru, known.en) : tr(lang, 'custom')),
+        hexInput,
+        native,
+        req.onReset ? h('button', { class: 'btn', type: 'button', onclick: () => (req.onReset?.(), this.close()) }, tr(lang, 'resetColor')) : null,
+      ),
     )
   }
 }
