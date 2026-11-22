@@ -96,17 +96,29 @@ function createWindow() {
   void win.loadURL('app://maket/index.html')
 
   if (shotPath) {
+    // ждём, пока загрузятся все модели сцены (но не дольше 60 с), снимаем окно и пишем рядом состояние
     const errors = []
     win.webContents.on('console-message', (e) => (e.level === 'warning' || e.level === 'error') && errors.push(e.message))
-    setTimeout(async () => {
-      const state = await win.webContents.executeJavaScript(
-        `(async () => { const m = window.__maket; if (!m) return null; const was = localStorage.getItem('maket.probe'); localStorage.setItem('maket.probe', String(Number(was ?? 0) + 1)); return { items: m.store.doc.items.length, loaded: m.items.pickables().filter((g) => !g.children.some((c) => c.userData.ghost)).length, fonts: [...document.fonts].filter((f) => f.status === 'loaded').length, lang: m.store.lang, runsBefore: Number(was ?? 0), db: (await indexedDB.databases()).map((d) => d.name) } })()`,
-      )
+    const probe = `(async () => { const m = window.__maket; if (!m) return null; const runs = Number(localStorage.getItem('maket.probe') ?? 0); return { items: m.store.doc.items.length, loaded: m.items.pickables().filter((g) => !g.children.some((c) => c.userData.ghost)).length, fonts: [...document.fonts].filter((f) => f.status === 'loaded').length, lang: m.store.lang, runsBefore: runs, db: (await indexedDB.databases()).map((d) => d.name), contextLost: m.stage.renderer.getContext().isContextLost() } })()`
+    const started = Date.now()
+    const finish = async (state) => {
+      await win.webContents.executeJavaScript(`localStorage.setItem('maket.probe', String(Number(localStorage.getItem('maket.probe') ?? 0) + 1))`).catch(() => {})
       const image = await win.webContents.capturePage()
       fs.writeFileSync(shotPath, image.toPNG())
-      console.log(JSON.stringify({ state, errors: errors.slice(0, 5) }))
+      const report = JSON.stringify({ state, size: image.getSize(), errors: errors.slice(0, 5) })
+      fs.writeFileSync(shotPath + '.json', report)
+      console.log(report)
       app.quit()
-    }, 9000)
+    }
+    const poll = async () => {
+      const state = await win.webContents.executeJavaScript(probe).catch(() => null)
+      const ready = state && state.items > 0 && state.loaded === state.items && state.fonts >= 6 && !state.contextLost
+      if (process.env.MAKET_TRACE) console.log(Date.now() - started, JSON.stringify(state))
+      if (ready) setTimeout(() => void finish(state), 2000)
+      else if (Date.now() - started > 60000) void finish(state)
+      else setTimeout(poll, 500)
+    }
+    win.webContents.once('did-finish-load', () => setTimeout(poll, 1000))
   }
 }
 

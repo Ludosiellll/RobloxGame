@@ -46,9 +46,11 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx electron-builder --win --x64 --publish never
+      - name: Запустить собранную программу и проверить, что сцена загрузилась
+        run: node scripts/desktop-check.mjs release/win-unpacked/Maket.exe release/windows-check.png
       - run: ls -la release
       - name: Выложить релиз
         run: |
           v="${{ needs.plan.outputs.version }}"
-          gh release create "v$v" release/Maket-Setup.exe release/Maket-Portable.exe \
+          gh release create "v$v" release/Maket-Setup.exe release/Maket-Portable.exe release/windows-check.png \
             --target "$GITHUB_SHA" --title "Макет $v" --notes-file desktop/RELEASE_NOTES.md
