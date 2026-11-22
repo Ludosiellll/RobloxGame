@@ -151,6 +151,35 @@ await page.waitForTimeout(2000)
 const afterReload = await state()
 check('проект и свои модели сохраняются', afterReload.items === beforeReload.items && afterReload.user === 2, JSON.stringify({ items: afterReload.items, user: afterReload.user }))
 
+// 10. сброс видеокарты (сон, смена драйвера): сцена должна нарисоваться заново и выглядеть так же
+const stageLook = async () => {
+  const png = (await page.screenshot({ clip: { x: 300, y: 120, width: 600, height: 420 } })).toString('base64')
+  return page.evaluate(async (b64) => {
+    const bmp = await createImageBitmap(await (await fetch('data:image/png;base64,' + b64)).blob())
+    const c = new OffscreenCanvas(bmp.width, bmp.height)
+    const g = c.getContext('2d')
+    g.drawImage(bmp, 0, 0)
+    const d = g.getImageData(0, 0, bmp.width, bmp.height).data
+    let sum = 0
+    for (let i = 0; i < d.length; i += 4) sum += d[i] * 0.2126 + d[i + 1] * 0.7152 + d[i + 2] * 0.0722
+    return sum / (d.length / 4)
+  }, png)
+}
+await page.keyboard.press('Escape')
+await page.waitForTimeout(600)
+const lookBefore = await stageLook()
+await page.evaluate(async () => {
+  const gl = window.__maket.stage.renderer.getContext()
+  const ext = gl.getExtension('WEBGL_lose_context')
+  ext.loseContext()
+  await new Promise((r) => setTimeout(r, 300))
+  ext.restoreContext()
+})
+await page.waitForTimeout(1500)
+const lookAfter = await stageLook()
+check('после сброса видеокарты сцена выглядит так же', Math.abs(lookAfter - lookBefore) < 1.5, `яркость ${lookBefore.toFixed(1)} → ${lookAfter.toFixed(1)}`)
+await shot('e2e-restored')
+
 check('нет ошибок в консоли', errors.length === 0, errors.slice(0, 4).join(' | '))
 await browser.close()
 server.close()

@@ -45,10 +45,12 @@ export class Stage {
     host.appendChild(this.renderer.domElement)
     this.renderer.domElement.setAttribute('aria-label', '3D scene')
 
-    const pmrem = new THREE.PMREMGenerator(this.renderer)
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
-    this.scene.environmentIntensity = 0.3
-    pmrem.dispose()
+    this.makeEnvironment()
+    // если видеокарта сбросила контекст (сон, смена драйвера) — пересоздаём окружение и перерисовываем
+    this.renderer.domElement.addEventListener('webglcontextrestored', () => {
+      this.makeEnvironment()
+      this.applyLight()
+    })
 
     this.sun.castShadow = true
     this.sun.shadow.mapSize.set(2048, 2048)
@@ -75,6 +77,13 @@ export class Stage {
     ro.observe(host)
     this.resize()
     this.renderer.setAnimationLoop(() => this.frame())
+  }
+
+  private makeEnvironment(): void {
+    const pmrem = new THREE.PMREMGenerator(this.renderer)
+    this.scene.environment?.dispose()
+    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+    pmrem.dispose()
   }
 
   invalidate(): void {
