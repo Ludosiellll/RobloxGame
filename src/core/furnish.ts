@@ -3,10 +3,10 @@
 
 import { KIT_BY_KEY } from './catalog'
 import { dropItems, type Doc, type Item, type Opening, type Room } from './doc'
-import { roomAt } from './walls'
+import { buildWalls } from './walls'
 
 export type RoomKind = 'living' | 'bedroom' | 'kitchen' | 'bath' | 'office'
-type Edge = 'n' | 's' | 'w' | 'e'
+export type Edge = 'n' | 's' | 'w' | 'e'
 
 /** Одна вещь набора и то, как её поставить. */
 export interface Pick {
@@ -46,11 +46,14 @@ export interface Furnished {
   colors: Record<string, string>
 }
 
+/** Занятое место: прямоугольник на полу и высоты, между которыми оно занято (без высот — от пола до потолка). */
 export interface BusyBox {
   x0: number
   x1: number
   z0: number
   z1: number
+  y0?: number
+  y1?: number
 }
 
 type Size = { w: number; d: number; h: number }
@@ -127,6 +130,8 @@ const r2 = (v: number) => Math.round(v * 100) / 100
 /** между предметами остаётся хотя бы такой зазор — тогда округление до сантиметра не сдвинет их друг на друга */
 const GAP = 0.02
 const hits = (a: BusyBox, b: BusyBox) => a.x0 < b.x1 + GAP && b.x0 < a.x1 + GAP && a.z0 < b.z1 + GAP && b.z0 < a.z1 + GAP
+/** занято ли место по высоте между lo и hi */
+const reaches = (b: BusyBox, lo: number, hi: number) => (b.y0 ?? 0) < hi - 0.01 && lo < (b.y1 ?? Infinity) - 0.01
 
 const EDGE_ROT: Record<Edge, number> = { n: 0, w: 90, s: 180, e: 270 }
 const OPPOSITE: Record<Edge, Edge> = { n: 's', s: 'n', w: 'e', e: 'w' }
@@ -148,8 +153,18 @@ interface Spot {
   t: number
 }
 
-/** Расставить набор в комнате. busy — места, занятые мебелью, которая уже стоит. */
-export function furnish(room: Room, openings: Opening[], busy: BusyBox[], picks: Pick[], sizeOf: (key: string) => Size | null): { items: Furnished[]; skipped: number } {
+/**
+ * Расставить набор в комнате. busy — места, занятые мебелью, которая уже стоит.
+ * gaps — участки краёв комнаты, где стены нет (комната слилась с соседней): к ним мебель спиной не ставится.
+ */
+export function furnish(
+  room: Room,
+  openings: Opening[],
+  busy: BusyBox[],
+  picks: Pick[],
+  sizeOf: (key: string) => Size | null,
+  gaps: Partial<Record<Edge, [number, number][]>> = {},
+): { items: Furnished[]; skipped: number } {
   const B = { x0: room.x - room.w / 2 + INSET, x1: room.x + room.w / 2 - INSET, z0: room.z - room.d / 2 + INSET, z1: room.z + room.d / 2 - INSET }
   const horizontal = (e: Edge) => e === 'n' || e === 's'
   const span = (e: Edge): [number, number] => (horizontal(e) ? [B.x0, B.x1] : [B.z0, B.z1])
@@ -159,8 +174,9 @@ export function furnish(room: Room, openings: Opening[], busy: BusyBox[], picks:
 
   // двери и окна этой комнаты по стенам
   const doors: Record<Edge, number[]> = { n: [], s: [], w: [], e: [] }
-  const windows: Record<Edge, [number, number][]> = { n: [], s: [], w: [], e: [] }
   const taken: BusyBox[] = [...busy]
+  // где стены нет, там проход в соседнюю комнату: место перед ним свободно, как перед дверью
+  for (const e of EDGES) for (const [lo, hi] of gaps[e] ?? []) if (hi - lo > 0.05) taken.push(wallBox(e, (lo + hi) / 2, hi - lo, DOOR_DEPTH))
   for (const o of openings) {
     let edge: Edge | null = null
     if (o.axis === 'x' && Math.abs(o.x - room.x) <= room.w / 2) edge = Math.abs(o.z - (room.z - room.d / 2)) < 0.08 ? 'n' : Math.abs(o.z - (room.z + room.d / 2)) < 0.08 ? 's' : null
@@ -170,12 +186,16 @@ export function furnish(room: Room, openings: Opening[], busy: BusyBox[], picks:
     if (o.kind === 'door') {
       doors[edge].push(at)
       // перед дверью оставляем проход
-      taken.push(wallBox(edge, at, o.width + 0.2, DOOR_DEPTH))
-    } else windows[edge].push([at - o.width / 2, at + o.width / 2])
+      taken.push({ ...wallBox(edge, at, o.width + 0.2, DOOR_DEPTH), y0: 0, y1: 2.2 })
+    } else {
+      // окно занимает место у стены выше подоконника: низкая мебель под ним помещается, высокая и навесная — нет
+      taken.push({ ...wallBox(edge, at, o.width, 0.3), y0: TALL, y1: 2.4 })
+    }
   }
 
   const inside = (b: BusyBox) => b.x0 >= B.x0 - 0.001 && b.x1 <= B.x1 + 0.001 && b.z0 >= B.z0 - 0.001 && b.z1 <= B.z1 + 0.001
-  const free = (b: BusyBox) => inside(b) && !taken.some((q) => hits(b, q))
+  /** свободно ли место для вещи, занимающей высоты от lo до hi */
+  const free = (b: BusyBox, lo: number, hi: number) => inside(b) && !taken.some((q) => hits(b, q) && reaches(q, lo, hi))
   const boxAround = (x: number, z: number, size: Size, rot: number): BusyBox => {
     const turned = rot === 90 || rot === 270
     const hw = (turned ? size.d : size.w) / 2
@@ -190,10 +210,7 @@ export function furnish(room: Room, openings: Opening[], busy: BusyBox[], picks:
     const a = size.w
     if (hi - lo < a) return null
     const clampT = (t: number) => Math.min(hi - a / 2, Math.max(lo + a / 2, t))
-    const ok = (t: number) => {
-      if (!free(wallBox(e, t, a, size.d))) return false
-      return size.h <= TALL || !windows[e].some(([w0, w1]) => t - a / 2 < w1 && w0 < t + a / 2)
-    }
+    const ok = (t: number) => free(wallBox(e, t, a, size.d), 0, size.h)
     const start = clampT(t0)
     if (ok(start)) return start
     for (let k = 1; k * 0.1 <= hi - lo; k++) {
@@ -208,8 +225,8 @@ export function furnish(room: Room, openings: Opening[], busy: BusyBox[], picks:
   const depth: Record<Edge, number> = { n: 0, s: 0, w: 0, e: 0 }
   const put = (key: string, size: Size, e: Edge, t: number, y = 0): Spot => {
     const c = centerOf(wallBox(e, t, size.w, size.d))
+    taken.push({ ...wallBox(e, t, size.w, size.d), y0: y, y1: y + size.h })
     if (y === 0) {
-      taken.push(wallBox(e, t, size.w, size.d))
       used[e]++
       depth[e] = Math.max(depth[e], size.d)
     }
@@ -249,24 +266,28 @@ export function furnish(room: Room, openings: Opening[], busy: BusyBox[], picks:
       const e = ref.edge
       for (const side of [p.side ?? 1, -(p.side ?? 1)]) {
         const t = ref.t + side * (ref.size.w / 2 + size.w / 2 + (p.gap ?? 0.05))
-        const box = wallBox(e, t, size.w, size.d)
-        const blocksWindow = size.h > TALL && windows[e].some(([w0, w1]) => t - size.w / 2 < w1 && w0 < t + size.w / 2)
-        if (free(box) && !blocksWindow) return put(key, size, e, t)
+        if (free(wallBox(e, t, size.w, size.d), 0, size.h)) return put(key, size, e, t)
       }
       return null
     }
 
     if (p.place === 'above' && ref?.edge) {
-      // навесное не вешаем поверх окна
-      const e = ref.edge
-      if (windows[e].some(([w0, w1]) => ref.t - size.w / 2 < w1 && w0 < ref.t + size.w / 2)) return null
-      return put(key, size, e, ref.t, p.y ?? 1.5)
+      // навесное не вешаем поверх окна и туда, где уже что-то висит
+      const y = p.y ?? 1.5
+      return free(wallBox(ref.edge, ref.t, size.w, size.d), y, y + size.h) ? put(key, size, ref.edge, ref.t, y) : null
     }
 
     if (p.place === 'on' && ref) {
       const [fx, fz] = FRONT[ref.rot]
       const s = p.shift ?? 0
-      return { key, size, x: ref.x + fx * s, z: ref.z + fz * s, y: ref.y + ref.size.h, rot: ref.rot, edge: null, t: 0 }
+      const x = ref.x + fx * s
+      const z = ref.z + fz * s
+      // вещь должна помещаться на опоре: телевизор не ставим на столик, который уже его самого
+      const top = boxAround(ref.x, ref.z, ref.size, ref.rot)
+      const own = boxAround(x, z, size, ref.rot)
+      const over = 0.04
+      if (own.x0 < top.x0 - over || own.x1 > top.x1 + over || own.z0 < top.z0 - over || own.z1 > top.z1 + over) return null
+      return { key, size, x, z, y: ref.y + ref.size.h, rot: ref.rot, edge: null, t: 0 }
     }
 
     if (p.place === 'near' && ref) {
@@ -284,8 +305,8 @@ export function furnish(room: Room, openings: Opening[], busy: BusyBox[], picks:
       const x = ref.x + dx * dist + sx * (p.shift ?? 0)
       const z = ref.z + dz * dist + sz * (p.shift ?? 0)
       const box = boxAround(x, z, size, rot)
-      if (!free(box)) return null
-      taken.push(box)
+      if (!free(box, 0, size.h)) return null
+      taken.push({ ...box, y0: 0, y1: size.h })
       return { key, size, x, z, y: 0, rot, edge: null, t: 0 }
     }
 
@@ -302,11 +323,11 @@ export function furnish(room: Room, openings: Opening[], busy: BusyBox[], picks:
         for (let j = -10; j <= 10; j++) {
           const far = Math.hypot(i, j)
           if (best && far >= best.far) continue
-          if (free(boxAround(x + i * 0.1, z + j * 0.1, size, rot))) best = { x: x + i * 0.1, z: z + j * 0.1, far }
+          if (free(boxAround(x + i * 0.1, z + j * 0.1, size, rot), 0, size.h)) best = { x: x + i * 0.1, z: z + j * 0.1, far }
         }
       }
       if (!best) return null
-      taken.push(boxAround(best.x, best.z, size, rot))
+      taken.push({ ...boxAround(best.x, best.z, size, rot), y0: 0, y1: size.h })
       return { key, size, x: best.x, z: best.z, y: 0, rot, edge: null, t: 0 }
     }
 
@@ -315,8 +336,7 @@ export function furnish(room: Room, openings: Opening[], busy: BusyBox[], picks:
       for (const [e, end] of corners) {
         const [lo, hi] = span(e)
         const t = end === 'lo' ? lo + size.w / 2 : hi - size.w / 2
-        const blocksWindow = size.h > TALL && windows[e].some(([w0, w1]) => t - size.w / 2 < w1 && w0 < t + size.w / 2)
-        if (free(wallBox(e, t, size.w, size.d)) && !blocksWindow) return put(key, size, e, t)
+        if (free(wallBox(e, t, size.w, size.d), 0, size.h)) return put(key, size, e, t)
       }
       return null
     }
@@ -355,20 +375,47 @@ export function furnishRoom(
 ): { doc: Doc; placed: number; skipped: number } {
   const room = doc.rooms.find((r) => r.id === roomId)
   if (!room) return { doc, placed: 0, skipped: 0 }
-  const inRoom = (i: Item) => roomAt(doc.rooms, i.x, i.z)?.id === roomId
+  const inRoom = (i: Item) => roomHolds(room, i)
   const base = opts.replace ? dropItems(doc, inRoom) : doc
-  const busy: BusyBox[] = base.items.filter((i) => inRoom(i) && i.y < 0.3).flatMap((i) => {
+  const busy: BusyBox[] = base.items.filter(inRoom).flatMap((i) => {
     const s = opts.sizeOf(i) ?? { w: 0.6, d: 0.6, h: 0.6 }
     if (s.h < 0.05) return []
-    const turned = Math.round(i.rot / 90) % 2 !== 0
-    const hw = ((turned ? s.d : s.w) * i.scale) / 2
-    const hd = ((turned ? s.w : s.d) * i.scale) / 2
-    return [{ x0: i.x - hw, x1: i.x + hw, z0: i.z - hd, z1: i.z + hd }]
+    // прямоугольник, в который вписана вещь при любом повороте
+    const a = (i.rot * Math.PI) / 180
+    const hw = ((Math.abs(s.w * Math.cos(a)) + Math.abs(s.d * Math.sin(a))) * i.scale) / 2
+    const hd = ((Math.abs(s.w * Math.sin(a)) + Math.abs(s.d * Math.cos(a))) * i.scale) / 2
+    return [{ x0: i.x - hw, x1: i.x + hw, z0: i.z - hd, z1: i.z + hd, y0: i.y, y1: i.y + s.h * i.scale }]
   })
   const sizeOfKey = opts.sizeOfKey ?? ((key: string) => KIT_SIZES(key))
-  const res = furnish(room, doc.openings, busy, PRESETS[kind], sizeOfKey)
+  const res = furnish(room, doc.openings, busy, PRESETS[kind], sizeOfKey, wallGaps(doc.rooms, room))
   const added: Item[] = res.items.map((f) => ({ id: opts.newId(), src: { kind: 'kit', key: f.key }, x: f.x, z: f.z, y: f.y, rot: f.rot, scale: 1, lift: f.lift, colors: f.colors }))
   return { doc: { ...base, items: [...base.items, ...added] }, placed: added.length, skipped: res.skipped }
 }
 
 const KIT_SIZES = (key: string): Size | null => KIT_BY_KEY.get(key) ?? null
+
+/** Вещь стоит в прямоугольнике комнаты. В слившихся комнатах вещь из общей части считается стоящей в обеих. */
+export function roomHolds(room: Room, at: { x: number; z: number }): boolean {
+  return Math.abs(at.x - room.x) <= room.w / 2 && Math.abs(at.z - room.z) <= room.d / 2
+}
+
+/** Участки краёв комнаты, на которых стены нет: их проглотила перекрывающая комната. */
+export function wallGaps(rooms: Room[], room: Room): Record<Edge, [number, number][]> {
+  const walls = buildWalls(rooms)
+  const x0 = room.x - room.w / 2
+  const x1 = room.x + room.w / 2
+  const z0 = room.z - room.d / 2
+  const z1 = room.z + room.d / 2
+  const gapsOn = (axis: 'x' | 'z', c: number, lo: number, hi: number): [number, number][] => {
+    const covered = walls.filter((w) => w.axis === axis && Math.abs(w.c - c) < 0.002 && w.b > lo && w.a < hi).map((w): [number, number] => [Math.max(lo, w.a), Math.min(hi, w.b)]).sort((p, q) => p[0] - q[0])
+    const out: [number, number][] = []
+    let at = lo
+    for (const [a, b] of covered) {
+      if (a > at + 0.001) out.push([at, a])
+      at = Math.max(at, b)
+    }
+    if (hi > at + 0.001) out.push([at, hi])
+    return out
+  }
+  return { n: gapsOn('x', z0, x0, x1), s: gapsOn('x', z1, x0, x1), w: gapsOn('z', x0, z0, z1), e: gapsOn('z', x1, z0, z1) }
+}

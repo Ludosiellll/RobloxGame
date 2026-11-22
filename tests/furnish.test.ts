@@ -149,6 +149,54 @@ describe('расстановка мебели', () => {
     expect(overlap(boxOf(items[0]), busy[0])).toBe(false)
   })
 
+  it('телевизор не ставится на тумбу, которая уже его самого', () => {
+    // в тесной комнате вместо тумбы под ТВ встаёт приставной столик — телевизор шире него
+    const r = room(3.05, 2.8)
+    const items = furnish(r, [door(r, 's', 0.8), windowOn(r, 0)], [], PRESETS.living, sizeOf).items
+    const tv = items.find((f) => f.key === 'televisionModern')
+    const base = items.find((f) => f.key === 'cabinetTelevision' || f.key === 'sideTable')
+    if (tv) expect(base?.key).toBe('cabinetTelevision')
+    for (let w = 1.2; w <= 1.5; w += 0.1) {
+      const narrow = furnish(room(w, 3.9), [], [], PRESETS.living, sizeOf).items
+      const t = narrow.find((f) => f.key === 'televisionModern')
+      if (t) expect(narrow.some((f) => f.key === 'cabinetTelevision'), `комната ${w}`).toBe(true)
+    }
+  })
+
+  it('высокая вещь в углу не закрывает окно на соседней стене', () => {
+    const r = room(2, 3.1)
+    // окно на северной стене; душевая (выше окна) просится в угол
+    const win: Opening = { id: 'w', kind: 'window', axis: 'x', x: r.x + 0.36, z: r.z - r.d / 2, width: 1.2 }
+    const zone = { x0: win.x - 0.6, x1: win.x + 0.6, z0: r.z - r.d / 2, z1: r.z - r.d / 2 + 0.3 }
+    const items = furnish(r, [win], [], [{ key: 'shower', place: 'wall', anchor: 'start' }], sizeOf).items
+    expect(items.length).toBe(1)
+    expect(overlap(boxOf(items[0]), zone)).toBe(false)
+  })
+
+  it('занятое место на высоте мешает только тому, что до него достаёт', () => {
+    const r = room(4, 3)
+    // навесной шкаф на всю северную стену на высоте 0,5–1,3 м
+    const cabinet = { x0: -2, x1: 2, z0: -1.5, z1: -1.0, y0: 0.5, y1: 1.3 }
+    const sofa = furnish(r, [], [cabinet], [{ key: 'loungeSofa', place: 'wall' }], sizeOf).items[0]
+    expect(overlap(boxOf(sofa), cabinet)).toBe(false)
+    // низкая банкетка (0,42 м) под шкафом помещается
+    const bench = furnish(r, [], [cabinet, { x0: -2, x1: 2, z0: 0.2, z1: 1.5 }, { x0: -2, x1: -1, z0: -1.5, z1: 1.5 }, { x0: 1, x1: 2, z0: -1.5, z1: 1.5 }], [{ key: 'benchCushionLow', place: 'wall' }], sizeOf).items
+    expect(bench.length).toBe(1)
+    expect(bench[0].rot).toBe(0)
+  })
+
+  it('над плитой уже висит шкаф: плита остаётся на месте, вытяжка туда не вешается', () => {
+    const r = room(5, 3.6)
+    const all = furnish(r, [door(r, 's', 1.5)], [], PRESETS.kitchen, sizeOf).items
+    const stove = all.find((f) => f.key === 'kitchenStoveElectric')!
+    expect(all.some((f) => f.key === 'hoodModern')).toBe(true)
+    const hung = { ...boxOf(stove), y0: 1.5, y1: 2.3 }
+    const again = furnish(r, [door(r, 's', 1.5)], [hung], PRESETS.kitchen, sizeOf).items
+    const stoveAgain = again.find((f) => f.key === 'kitchenStoveElectric')!
+    expect([stoveAgain.x, stoveAgain.z]).toEqual([stove.x, stove.z])
+    expect(again.some((f) => f.key === 'hoodModern')).toBe(false)
+  })
+
   describe('обставить комнату в проекте', () => {
     const withRoom = (): Doc => ({ ...defaultDoc(), rooms: [room(5, 4)] })
     let n = 0
@@ -179,6 +227,43 @@ describe('расстановка мебели', () => {
       const old = { x0: -1.01, x1: 1.01, z0: -1.18, z1: 1.18 }
       for (const i of res.doc.items.filter((q) => q.id !== 'old' && q.y === 0 && KIT_BY_KEY.get(q.src.key)!.h >= 0.05)) {
         expect(overlap(boxOf({ key: i.src.key, x: i.x, z: i.z, y: i.y, rot: i.rot, lift: i.lift, colors: i.colors }), old), i.src.key).toBe(false)
+      }
+    })
+
+    it('повёрнутая не под прямым углом мебель занимает всё место, которое реально занимает', () => {
+      for (const rot of [15, 30, 45, 60, 75]) {
+        let doc = addItem(withRoom(), { kind: 'kit', key: 'loungeSofa' }, 'old', { x: -1.2, z: -1.2 })
+        doc = { ...doc, items: doc.items.map((i) => ({ ...i, rot })) }
+        const res = furnishRoom(doc, 'r', 'living', { replace: false, sizeOf: size, newId })
+        // точная проверка: углы новой мебели не попадают внутрь повёрнутого дивана
+        const a = (rot * Math.PI) / 180
+        const insideSofa = (x: number, z: number) => {
+          const dx = x + 1.2
+          const dz = z + 1.2
+          const lx = dx * Math.cos(a) - dz * Math.sin(a)
+          const lz = dx * Math.sin(a) + dz * Math.cos(a)
+          return Math.abs(lx) < 2.06 / 2 - 0.02 && Math.abs(lz) < 0.86 / 2 - 0.02
+        }
+        for (const i of res.doc.items.filter((q) => q.id !== 'old' && q.y === 0 && KIT_BY_KEY.get(q.src.key)!.h >= 0.05)) {
+          const b = boxOf({ key: i.src.key, x: i.x, z: i.z, y: i.y, rot: i.rot, lift: i.lift, colors: i.colors })
+          for (const [x, z] of [[b.x0, b.z0], [b.x1, b.z0], [b.x0, b.z1], [b.x1, b.z1], [i.x, i.z]]) expect(insideSofa(x, z), `${rot}°: ${i.src.key}`).toBe(false)
+        }
+      }
+    })
+
+    it('в слившихся комнатах мебель не ставится к краю, где стены нет, и видит вещи в общей части', () => {
+      // комнаты 5×4 и 4×4 перекрываются по x от 1,5 до 2,5; диван стоит в общей части
+      let doc: Doc = { ...defaultDoc(), rooms: [room(5, 4), { ...room(4, 4, 3.5, 0), id: 'other' }] }
+      doc = addItem(doc, { kind: 'kit', key: 'loungeSofa' }, 'old', { x: 2, z: 0 })
+      for (const kind of KINDS) {
+        const res = furnishRoom(doc, 'r', kind, { replace: false, sizeOf: size, newId })
+        const sofa = { x0: 2 - 1.03, x1: 2 + 1.03, z0: -0.43, z1: 0.43 }
+        for (const i of res.doc.items.filter((q) => q.id !== 'old' && q.y === 0 && KIT_BY_KEY.get(q.src.key)!.h >= 0.05)) {
+          const b = boxOf({ key: i.src.key, x: i.x, z: i.z, y: i.y, rot: i.rot, lift: i.lift, colors: i.colors })
+          expect(overlap(b, sofa), `${kind}: ${i.src.key} на диване`).toBe(false)
+          // восточный край первой комнаты (x = 2,5) проглочен второй комнатой: спиной к нему ничего не стоит
+          expect(i.rot === 270 && b.x1 > 2.3, `${kind}: ${i.src.key} у несуществующей стены`).toBe(false)
+        }
       }
     })
 

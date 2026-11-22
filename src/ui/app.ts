@@ -3,14 +3,14 @@
 import { projectColors } from '../core/color'
 import { CATEGORIES, KIT, KIT_BY_KEY, KIT_THUMB, SLOT_NAMES, type CatId } from '../core/catalog'
 import { addRoom, defaultDoc, dropItems, LIMITS, setItemColor, setLight, setScene, setUnderlay, setWalls, updateItem, updateOpening, updateRoom, updateUnderlay, type Doc, type FloorKind, type Item, type MatKind } from '../core/doc'
-import { furnishRoom, type RoomKind } from '../core/furnish'
+import { furnishRoom, roomHolds, type RoomKind } from '../core/furnish'
 import { fmt, tr, type TextKey } from '../core/i18n'
 import { isArchive, isImageFile } from '../core/importPick'
 import { isOrphan } from '../core/orphans'
 import { projectFileName } from '../core/projectFile'
 import { starterDoc } from '../core/starter'
 import { calibrate, defaultUnderlay, underlaySize } from '../core/underlay'
-import { floorArea, roomAt, snapOpening } from '../core/walls'
+import { floorArea, snapOpening } from '../core/walls'
 import { prepareImage, type ImageStore } from '../images'
 import { saveFile } from '../platform'
 import { packProject, readProject, type OpenedProject } from '../projectFile'
@@ -58,6 +58,8 @@ export class Ui {
   private readonly tray = h('section', { class: 'tray board' })
   private readonly drop = h('div', { class: 'dropzone', hidden: true })
   private readonly helpEl = h('div', { class: 'help board', hidden: true })
+  /** полоса режима: видна всегда, пока включено рисование комнаты или разметка масштаба */
+  private readonly modeBar = h('div', { class: 'mode-bar board', hidden: true, role: 'status' })
   private readonly fan: FanDeck
   private readonly file = h('input', { type: 'file', id: 'model-file', multiple: true, accept: ACCEPT, hidden: true })
   private readonly projectFile = h('input', { type: 'file', id: 'project-file', accept: '.zip', hidden: true })
@@ -75,7 +77,7 @@ export class Ui {
 
   constructor(root: HTMLElement, private readonly d: UiDeps) {
     this.fan = new FanDeck(() => d.store.lang)
-    root.append(this.top, this.inspector, this.fan.el, this.tray, this.helpEl, d.toaster.el, this.drop, this.file, this.projectFile, this.planFile)
+    root.append(this.top, this.inspector, this.fan.el, this.tray, this.helpEl, d.toaster.el, this.modeBar, this.drop, this.file, this.projectFile, this.planFile)
     this.file.addEventListener('change', () => {
       const files = [...(this.file.files ?? [])]
       this.file.value = ''
@@ -91,8 +93,8 @@ export class Ui {
       this.planFile.value = ''
       if (file) void this.loadPlan(file)
     })
-    d.interact.onCalibration = () => this.renderInspector()
-    d.interact.onDrawing = () => this.renderInspector()
+    d.interact.onCalibration = () => { this.renderInspector(); this.renderMode() }
+    d.interact.onDrawing = () => { this.renderInspector(); this.renderMode() }
     // Ctrl+S — проект в файл, Ctrl+O — открыть файл проекта
     window.addEventListener('keydown', (e) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return
@@ -108,6 +110,7 @@ export class Ui {
     this.bindDrop()
     d.store.on((c) => {
       if (c === 'lang') {
+        this.renderMode()
         this.fan.close()
         this.renderTop()
         this.renderTray()
@@ -316,6 +319,17 @@ export class Ui {
       const files = [...(e.dataTransfer?.files ?? [])]
       if (files.length) void this.importFiles(files)
     })
+  }
+
+  /** Полоса над сценой говорит, какой режим включён, и даёт из него выйти — панель при этом может быть свёрнута. */
+  private renderMode(): void {
+    const { interact } = this.d
+    const cal = interact.calibration
+    const text = interact.drawing ? this.t('modeDraw') : cal && cal.points.length < 2 ? this.t(cal.points.length === 0 ? 'modeCal1' : 'modeCal2') : null
+    this.modeBar.hidden = text === null
+    if (text === null) return
+    const stop = interact.drawing ? () => interact.stopDrawing() : () => interact.stopCalibration()
+    this.modeBar.replaceChildren(h('span', {}, text), h('button', { class: 'btn btn-tape btn-small', type: 'button', id: 'mode-done', onclick: stop }, this.t(interact.drawing ? 'drawRoomDone' : 'cancel')))
   }
 
   /** Раскрыть панель сцены (на телефоне она свёрнута до заголовка). */
@@ -704,7 +718,8 @@ export class Ui {
           h('button', { class: 'btn', type: 'button', onclick: closeAsk }, this.t('cancel'))))
       : h('div', { class: 'btn-row' }, ...sets.map(([kind, key]) => h('button', { class: 'btn btn-small', type: 'button', 'data-furnish': kind, onclick: () => {
           const d = store.doc
-          if (d.items.some((i) => roomAt(d.rooms, i.x, i.z)?.id === id)) { this.furnishAsk = { room: id, kind }; this.renderInspector() } else this.furnish(id, kind, false)
+          const here = d.rooms.find((r) => r.id === id)
+          if (here && d.items.some((i) => roomHolds(here, i))) { this.furnishAsk = { room: id, kind }; this.renderInspector() } else this.furnish(id, kind, false)
         } }, this.t(key))))
     return [
       this.head(`${this.t('room')} ${index + 1}`, undefined, (d) => { const r = cur(d); return r ? `${fmt(lang, r.w * r.d, 1)} ${this.t('m2')}` : '' }),

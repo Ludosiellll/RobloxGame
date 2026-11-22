@@ -1,4 +1,4 @@
-import { LIMITS } from '../src/core/doc'
+import { LIMITS, addRoom, defaultDoc } from '../src/core/doc'
 import { describe, expect, it } from 'vitest'
 import { buildWalls, floorArea, roomAt, snapOpening, wallLowered, type Rect, roomFromDrag } from '../src/core/walls'
 
@@ -130,5 +130,14 @@ describe('snapOpening', () => {
     it('без комнат площадь ноль', () => {
       expect(floorArea([])).toBe(0)
     })
+  })
+
+  it('комната, нарисованная вплотную к соседней с краем на 1,525, делит с ней одну стену', () => {
+    const a = rect('a', -1.525, -2, 1.525, 2)
+    const drawn = roomFromDrag({ x: 1.6, z: -2 }, { x: 4, z: 2 }, [a])
+    const doc = addRoom({ ...defaultDoc(), rooms: [{ ...a, floor: { kind: 'planks', color: '#c79a6b' } }] }, 'b', drawn)
+    const walls = buildWalls(doc.rooms)
+    const between = walls.filter((w) => w.axis === 'z' && Math.abs(w.c - 1.525) < 0.01)
+    expect(between.map((w) => [w.c, w.a, w.b, w.exterior])).toEqual([[1.525, -2, 2, false]])
   })
 })

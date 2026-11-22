@@ -97,7 +97,16 @@ async function start(): Promise<void> {
   // старые картинки планов, на которые проект уже не ссылается, из хранилища убираем
   void images.keepOnly(store.doc.scene.underlay?.image ?? null)
   // обучение: при первом запуске предлагается само, потом открывается из справки
-  const tour = new Tour({ store, stage, items, openScene: () => ui.openScene() })
+  const tour = new Tour({
+    store,
+    stage,
+    items,
+    openScene: () => ui.openScene(),
+    stopModes: () => {
+      interact.stopDrawing()
+      interact.stopCalibration()
+    },
+  })
   uiRoot.append(tour.el)
   ui.onTour = () => tour.welcome()
   document.documentElement.lang = store.lang

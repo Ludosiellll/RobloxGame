@@ -200,6 +200,11 @@ export class Stage {
   }
 
   /** Плавно перевести камеру: общий вид или план сверху. */
+  /** Идёт плавная смена вида: положение камеры сейчас меняется само. */
+  get animating(): boolean {
+    return this.tween !== null
+  }
+
   /** Сообщать о смене вида (объёмный или сверху). */
   onView(fn: (view: ViewMode) => void): void {
     this.viewListeners.push(fn)

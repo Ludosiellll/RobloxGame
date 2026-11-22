@@ -147,13 +147,20 @@ const r2 = (v: number) => Math.round(v * 100) / 100
 // центр комнаты — до миллиметра: при шаге стен 5 см он попадает на 2,5 см, и округление до сантиметра сдвигало бы стену
 const r3 = (v: number) => Math.round(v * 1000) / 1000
 
+/**
+ * Края комнаты всегда стоят на целых миллиметрах: только так общий край двух комнат совпадает точно
+ * и становится одной стеной. Середина при нечётной ширине приходится на полмиллиметра — это нормально.
+ */
 function cleanRoom(r: Room): Room {
+  const w = r3(clamp(r.w, LIMITS.roomMin, LIMITS.roomMax))
+  const d = r3(clamp(r.d, LIMITS.roomMin, LIMITS.roomMax))
+  const half = (v: number) => Math.round(v * 2000) / 2000
   return {
     ...r,
-    x: r3(r.x),
-    z: r3(r.z),
-    w: r3(clamp(r.w, LIMITS.roomMin, LIMITS.roomMax)),
-    d: r3(clamp(r.d, LIMITS.roomMin, LIMITS.roomMax)),
+    x: half(r3(r.x - w / 2) + w / 2),
+    z: half(r3(r.z - d / 2) + d / 2),
+    w,
+    d,
     floor: { kind: FLOOR_KINDS.includes(r.floor.kind) ? r.floor.kind : DEFAULT_FLOOR.kind, color: isHex(r.floor.color) ? r.floor.color : DEFAULT_FLOOR.color },
   }
 }

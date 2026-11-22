@@ -23,6 +23,8 @@ export interface TourDeps {
   items: ItemsView
   /** на телефоне панель сцены свёрнута — раскрыть её для шага про свет */
   openScene: () => void
+  /** выйти из режимов рисования комнаты и разметки масштаба: в обучении мышь должна работать как обычно */
+  stopModes: () => void
 }
 
 const DONE_KEY = 'maket.tour'
@@ -32,6 +34,17 @@ const rectOf = (el: Element | null): Rect | null => {
   if (!el) return null
   const r = el.getBoundingClientRect()
   return r.width > 0 && r.height > 0 ? { x: r.left, y: r.top, w: r.width, h: r.height } : null
+}
+/** Видимая часть элемента: то, что внутри прокручиваемой панели скрыто за её краем, подсвечивать нельзя. */
+const visibleRect = (el: Element | null): Rect | null => {
+  const r = rectOf(el)
+  const box = rectOf(el?.closest('.inspector, .fan, .tray') ?? null)
+  if (!r || !box) return r
+  const x0 = Math.max(r.x, box.x)
+  const y0 = Math.max(r.y, box.y)
+  const x1 = Math.min(r.x + r.w, box.x + box.w)
+  const y1 = Math.min(r.y + r.h, box.y + box.h)
+  return x1 - x0 > 8 && y1 - y0 > 8 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null
 }
 const center = (r: Rect): Pt => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 })
 const grow = (r: Rect, by: number): Rect => ({ x: r.x - by, y: r.y - by, w: r.w + by * 2, h: r.h + by * 2 })
@@ -49,6 +62,8 @@ export class Tour {
   private focusId: string | null = null
   private variant = ''
   private completing = false
+  /** камера сама переезжает (смена вида): пока едет, шаг по её положению не судим */
+  private settled = true
   private raf = 0
   private demoTimer: ReturnType<typeof setTimeout> | null = null
   private nextTimer: ReturnType<typeof setTimeout> | null = null
@@ -109,8 +124,10 @@ export class Tour {
     this.el.hidden = false
     this.state = tourStart()
     this.focusId = null
-    // начинаем с объёмного вида: в виде сверху сцену не повернуть
-    if (this.d.stage.view !== '3d') this.d.stage.setView('3d')
+    this.d.stopModes()
+    // начинаем с объёмного вида: в виде сверху сцену не повернуть. Сразу, без плавного перехода —
+    // иначе шаг «осмотреться» засчитался бы за движение камеры, которого человек не делал
+    if (this.d.stage.view !== '3d') this.d.stage.setView('3d', true)
     this.enterStep()
     cancelAnimationFrame(this.raf)
     const loop = (): void => {
@@ -155,6 +172,8 @@ export class Tour {
     // подготовка: чтобы нужная панель была на виду
     if (step === 'look' || step === 'room' || step === 'light') store.select(null)
     if (step === 'light') this.d.openScene()
+    // последний шаг — включить вид сверху; если он уже включён, возвращаем объёмный, чтобы было что сделать
+    if (step === 'plan' && this.d.stage.view === 'plan') this.d.stage.setView('3d', true)
     this.start = snapOf(store.doc, this.view())
     this.el.className = 'tour is-step'
     this.variant = ''
@@ -236,6 +255,12 @@ export class Tour {
     return 'idle'
   }
 
+  /** Прокрутить панель так, чтобы нужное место было видно (на телефоне панель низкая). */
+  private reveal(step: TourStepId, sit: string): void {
+    const sel = step === 'turn' && sit === 'selected' ? '[data-tour="rotate"]' : step === 'paint' && sit === 'selected' ? '[data-tour="colors"]' : step === 'light' ? '#f-time' : null
+    if (sel) document.querySelector(sel)?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }
+
   private target(step: TourStepId, sit: string): Rect | null {
     switch (step) {
       case 'look':
@@ -245,14 +270,14 @@ export class Tour {
       case 'move':
         return this.itemRect()
       case 'turn':
-        return sit === 'selected' ? rectOf(document.querySelector('[data-tour="rotate"]')) ?? this.itemRect() : this.itemRect()
+        return sit === 'selected' ? visibleRect(document.querySelector('[data-tour="rotate"]')) ?? this.itemRect() : this.itemRect()
       case 'paint':
         if (sit === 'fan') return rectOf(document.querySelector('.fan'))
-        return sit === 'selected' ? rectOf(document.querySelector('[data-tour="colors"]')) ?? this.itemRect() : this.itemRect()
+        return sit === 'selected' ? visibleRect(document.querySelector('[data-tour="colors"]')) ?? this.itemRect() : this.itemRect()
       case 'room':
         return this.roomRect()
       case 'light':
-        return rectOf(document.querySelector('#f-time')?.closest('.field') ?? null)
+        return visibleRect(document.querySelector('#f-time')?.closest('.field') ?? null)
       case 'plan':
         return rectOf(document.querySelector('.top .seg'))
     }
@@ -271,7 +296,7 @@ export class Tour {
       case 'move':
         return { from: c, to: { x: c.x + 96, y: c.y + 26 } }
       case 'turn': {
-        const btn = sit === 'selected' ? rectOf(document.querySelector('[data-tour="rotate"] .btn:last-child')) : null
+        const btn = sit === 'selected' ? visibleRect(document.querySelector('[data-tour="rotate"] .btn:last-child')) : null
         return { from: btn ? center(btn) : c, to: null }
       }
       case 'paint': {
@@ -279,7 +304,7 @@ export class Tour {
           const strip = rectOf(document.querySelector('.fan .strip:nth-child(4)'))
           return { from: strip ? { x: strip.x + strip.w * 0.5, y: strip.y + strip.h * 0.3 } : c, to: null }
         }
-        const chip = sit === 'selected' ? rectOf(document.querySelector('[data-tour="colors"] .chip')) : null
+        const chip = sit === 'selected' ? visibleRect(document.querySelector('[data-tour="colors"] .chip')) : null
         return { from: chip ? center(chip) : c, to: null }
       }
       case 'room': {
@@ -319,6 +344,7 @@ export class Tour {
       this.variant = sit
       this.renderCard()
       this.glide()
+      this.reveal(step, sit)
       if (!first && !this.completing) {
         this.stopDemo()
         this.demoTimer = setTimeout(() => this.playDemo(), 450)
@@ -335,6 +361,15 @@ export class Tour {
       s.opacity = '1'
       this.placeCard(r)
     } else this.hole.style.opacity = '0'
+    if (this.d.stage.animating) {
+      this.settled = false
+      return
+    }
+    if (!this.settled) {
+      // камера доехала: отсчёт поворота вида начинаем с её нового положения
+      this.settled = true
+      this.start = snapOf(this.start.doc, this.view())
+    }
     if (!this.completing && stepDone(step, this.start, snapOf(this.d.store.doc, this.view()))) this.complete(step)
   }
 

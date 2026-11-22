@@ -45,6 +45,9 @@ export class Interact {
   onCalibration: () => void = () => {}
   /** рисование комнат: пока включено, нажатие и протяжка по коврику создают комнату */
   private drawOn = false
+  /** пальцы, которые сейчас касаются сцены: второй палец — это жест камеры, а не рисование */
+  private readonly fingers = new Set<number>()
+  private touchOne: THREE.TOUCH | null | undefined
   /** вызывается, когда рисование комнат включается или выключается */
   onDrawing: () => void = () => {}
 
@@ -91,7 +94,7 @@ export class Interact {
     el.addEventListener('pointerdown', (e) => this.onDown(e), { capture: true })
     window.addEventListener('pointermove', (e) => this.onMove(e))
     window.addEventListener('pointerup', (e) => this.onUp(e))
-    window.addEventListener('pointercancel', (e) => this.onUp(e))
+    window.addEventListener('pointercancel', (e) => this.onUp(e, true))
     window.addEventListener('keydown', (e) => this.onKey(e))
     el.addEventListener('contextmenu', (e) => e.preventDefault())
     stage.onFrame(() => this.refreshOverlay())
@@ -119,8 +122,19 @@ export class Interact {
   private onDown(e: PointerEvent): void {
     if (e.button !== 0 && e.pointerType === 'mouse') return
     this.down = { x: e.clientX, y: e.clientY }
+    if (e.pointerType === 'touch') this.fingers.add(e.pointerId)
     // рисование комнаты: первый угол — там, где нажали
     if (this.drawOn) {
+      if (e.pointerType === 'touch') {
+        // второй палец — жест камеры (приблизить, сдвинуть): начатую рамку бросаем, касание отдаём камере
+        if (this.fingers.size > 1) return this.dropDraw()
+        const p = this.floorPoint(e)
+        if (!p) return
+        // касание не перехватываем: камера должна видеть оба пальца, если появится второй
+        this.drag = { kind: 'draw', a: { x: p.x, z: p.z }, rect: null, moved: false }
+        this.pointerId = e.pointerId
+        return
+      }
       const p = this.floorPoint(e)
       if (!p) return
       this.drag = { kind: 'draw', a: { x: p.x, z: p.z }, rect: null, moved: false }
@@ -203,7 +217,8 @@ export class Interact {
     else this.dragDraw(d, e)
   }
 
-  private onUp(e: PointerEvent): void {
+  private onUp(e: PointerEvent, cancelled = false): void {
+    this.fingers.delete(e.pointerId)
     const d = this.drag
     if (d) {
       if (this.pointerId !== null && e.pointerId !== this.pointerId) return
@@ -212,6 +227,13 @@ export class Interact {
       this.stage.controls.enabled = true
       if (d.kind === 'draw') {
         this.down = null
+        // система оборвала жест (звонок, жест браузера) — комнату не создаём
+        if (cancelled) {
+          this.outline.visible = false
+          this.setTags([])
+          this.stage.invalidate()
+          return
+        }
         return this.finishDraw(d)
       }
       if (d.moved || (d.kind === 'item' && d.fresh)) this.store.commit()
@@ -259,17 +281,32 @@ export class Interact {
     this.store.select(null)
     this.drawOn = true
     this.stage.renderer.domElement.style.cursor = 'crosshair'
+    // один палец рисует, поэтому камера на него не отзывается; два пальца по-прежнему приближают и сдвигают
+    this.touchOne = this.stage.controls.touches.ONE
+    this.stage.controls.touches.ONE = null
     this.onDrawing()
   }
 
   stopDrawing(): void {
     if (!this.drawOn) return
     this.drawOn = false
+    this.dropDraw()
     this.stage.renderer.domElement.style.cursor = ''
+    this.stage.controls.touches.ONE = this.touchOne
+    this.onDrawing()
+  }
+
+  /** Бросить начатую рамку: комната не создаётся, камера снова слушается. */
+  private dropDraw(): void {
+    if (this.drag?.kind === 'draw') {
+      this.drag = null
+      this.pointerId = null
+      this.down = null
+      this.stage.controls.enabled = true
+    }
     this.outline.visible = false
     this.setTags([])
     this.stage.invalidate()
-    this.onDrawing()
   }
 
   /** Пока тянут: рамка будущей комнаты и её размеры. */

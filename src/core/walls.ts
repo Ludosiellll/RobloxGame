@@ -181,7 +181,9 @@ export function roomFromDrag(a: { x: number; z: number }, b: { x: number; z: num
   const bz = reach(az, place(b.z, zs))
   const width = r3(Math.abs(bx - ax))
   const depth = r3(Math.abs(bz - az))
-  return { x: r3((ax + bx) / 2), z: r3((az + bz) / 2), w: width, d: depth, ok: width >= LIMITS.roomMin && depth >= LIMITS.roomMin }
+  // середина — до полумиллиметра: при нечётной ширине в миллиметрах края иначе съехали бы с краёв соседа
+  const half = (v: number) => Math.round(v * 2000) / 2000
+  return { x: half((ax + bx) / 2), z: half((az + bz) / 2), w: width, d: depth, ok: width >= LIMITS.roomMin && depth >= LIMITS.roomMin }
 }
 
 /** Площадь пола всех комнат, м². Общая часть перекрывающихся комнат считается один раз. */

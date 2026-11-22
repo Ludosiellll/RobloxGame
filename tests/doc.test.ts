@@ -120,4 +120,17 @@ describe('doc', () => {
     expect(sanitizeDoc(null)).toEqual(defaultDoc())
     expect(sanitizeDoc({ rooms: [] }).rooms.length).toBe(1)
   })
+
+  it('края комнаты всегда встают на целые миллиметры, даже когда середина приходится на полмиллиметра', () => {
+    // левый край 1,525, правый 4 — ширина 2,475, середина 2,7625
+    let d = addRoom(defaultDoc(), 'r2', { x: 2.7625, z: 0, w: 2.475, d: 4 })
+    let r = d.rooms.find((q) => q.id === 'r2')!
+    expect(r.x - r.w / 2).toBeCloseTo(1.525, 9)
+    expect(r.x + r.w / 2).toBeCloseTo(4, 9)
+    // ширину поменяли ползунком: края остаются на миллиметрах
+    d = updateRoom(d, 'r2', { w: 2.5 })
+    r = d.rooms.find((q) => q.id === 'r2')!
+    for (const edge of [r.x - r.w / 2, r.x + r.w / 2]) expect(Math.abs(edge * 1000 - Math.round(edge * 1000))).toBeLessThan(1e-6)
+    expect(r.w).toBe(2.5)
+  })
 })
