@@ -1,5 +1,6 @@
 // Интерфейс: верхняя панель, каталог, панель свойств, сообщения, приём файлов.
 
+import { projectColors } from '../core/color'
 import { CATEGORIES, KIT, KIT_BY_KEY, KIT_THUMB, SLOT_NAMES, type CatId } from '../core/catalog'
 import { addRoom, defaultDoc, dropItems, LIMITS, setItemColor, setLight, setScene, setUnderlay, setWalls, updateItem, updateOpening, updateRoom, updateUnderlay, type Doc, type FloorKind, type Item, type MatKind } from '../core/doc'
 import { fmt, tr, type TextKey } from '../core/i18n'
@@ -451,7 +452,7 @@ export class Ui {
     const btn = h('button', { class: 'chip', type: 'button' }, sw, h('span', { class: 'chip-label' }, label), code)
     btn.addEventListener('click', () => {
       const cur = get(this.d.store.doc) ?? '#cccccc'
-      this.fan.open({ title: label, current: cur, onPick, onReset })
+      this.fan.open({ title: label, current: cur, onPick, onReset, palette: () => projectColors(this.d.store.doc) })
     })
     this.controls.push({
       el: btn,

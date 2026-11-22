@@ -163,7 +163,7 @@ button { cursor: pointer; }
 .fan-tab { height: 26px; padding: 0 8px; border: 0; background: none; border-radius: 2px; font-size: 12px; color: var(--ink-2); }
 .fan-tab:hover { background: var(--board-2); }
 .fan-tab.is-on { background: var(--ink); color: var(--board); }
-.fan-stage { position: relative; height: 226px; overflow: hidden; }
+.fan-stage { position: relative; height: 218px; overflow: hidden; }
 .strip { position: absolute; left: calc(50% - 16px); bottom: 14px; width: 32px; height: 178px; border: 0; padding: 9px 0 0 4px; border-radius: 3px 3px 14px 14px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28), -2px 0 4px -2px rgba(0, 0, 0, 0.35); transform-origin: 50% calc(100% - 12px); transform: rotate(var(--a)); transition: transform 0.14s ease-out; display: flex; justify-content: flex-start; color: rgba(20, 24, 28, 0.82); }
 .strip.is-dark { color: rgba(255, 255, 255, 0.86); }
 .strip:hover { transform: rotate(var(--a)) translateY(-10px); }
@@ -171,6 +171,18 @@ button { cursor: pointer; }
 .strip-name { writing-mode: vertical-rl; font: 600 10.5px/1 var(--f-mark); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; max-height: 132px; overflow: hidden; }
 .rivet { position: absolute; left: calc(50% - 6px); bottom: 20px; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f3f3f0, #9a9d98 70%); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4); z-index: 60; pointer-events: none; }
 .fan-foot { display: flex; align-items: center; gap: 8px; padding: 10px 12px 12px; border-top: 1px solid var(--rule); flex-wrap: wrap; }
+/* сочетания: образцы, как выкрасы на карточке */
+.fan-mix { padding: 9px 12px 11px; border-top: 1px solid var(--rule); display: grid; gap: 5px; }
+.mix-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mix-base { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-left: auto; font-size: 11.5px; color: var(--ink-2); }
+.base-chip { width: 20px; height: 20px; padding: 0; border: 0; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.22); }
+.base-chip.is-on { box-shadow: 0 0 0 2px var(--board), 0 0 0 3px var(--ink); margin: 0 3px; }
+.mix-row { display: grid; grid-template-columns: 78px 1fr; align-items: center; }
+.mix-name { font-size: 12px; color: var(--ink-2); }
+.mix-chips { display: flex; gap: 6px; }
+.mix-chip { flex: 0 1 54px; height: 22px; padding: 0; border: 0; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.22); }
+.mix-chip:hover { transform: translateY(-1px); }
+.mix-chip.is-on { box-shadow: 0 0 0 2px var(--board), 0 0 0 4px var(--ink); }
 .fan-chip { width: 28px; height: 28px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2); flex: none; }
 .fan-name { flex: 1 1 80px; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hex { width: 78px; height: 28px; border: 1px solid var(--edge); border-radius: 2px; background: #fff; padding: 0 7px; font: 400 12px/1 var(--f-mono); }
