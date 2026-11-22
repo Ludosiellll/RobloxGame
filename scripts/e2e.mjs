@@ -213,6 +213,43 @@ await page.waitForTimeout(800)
 check('чужой архив не открывается как проект', (await page.textContent('.toast.is-error').catch(() => '')).includes('не файл проекта') && (await state()).items === beforeSave.items)
 await page.waitForTimeout(400)
 
+// 9б2. комната рисуется мышью: нажать и растянуть прямоугольник
+await page.keyboard.press('Escape')
+const roomsWere = (await state()).rooms
+await page.click('#draw-room')
+await page.waitForFunction(() => !window.__maket.stage.tween, null, { timeout: 15000 })
+// отодвинуть камеру, чтобы слева от квартиры было свободное место на коврике
+await page.evaluate(() => { const m = window.__maket; const c = m.stage.camera; const t = m.stage.controls.target; c.position.sub(t).multiplyScalar(1.9).add(t); m.stage.controls.update(); m.stage.invalidate() })
+await page.waitForTimeout(500)
+const leftEdge = Math.min(...roomsWere.map((r) => r.x - r.w / 2))
+const dragRoom = async (x0, z0, x1, z1) => {
+  const a = await screenOf(x0, 0, z0)
+  const b = await screenOf(x1, 0, z1)
+  await page.mouse.move(a.x, a.y)
+  await page.mouse.down()
+  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 4 })
+  await page.mouse.move(b.x, b.y, { steps: 4 })
+  await page.mouse.up()
+  await page.waitForTimeout(200)
+  return [a, b]
+}
+const [da, db] = await dragRoom(leftEdge - 4.5, -1, leftEdge - 1.5, 1.5)
+s = await state()
+const drawn = s.rooms[s.rooms.length - 1]
+check('комната рисуется мышью', da.x > 20 && db.x < 1100 && s.rooms.length === roomsWere.length + 1 && Math.abs(drawn.w - 3) < 0.11 && Math.abs(drawn.d - 2.5) < 0.11, JSON.stringify({ drawn, da, db }))
+await dragRoom(leftEdge - 4.5, 2.5, leftEdge - 2.5, 4.5)
+check('можно нарисовать несколько комнат подряд', (await state()).rooms.length === roomsWere.length + 2)
+await dragRoom(leftEdge - 6, -1, leftEdge - 5.6, 1)
+check('слишком маленькая комната не создаётся', (await state()).rooms.length === roomsWere.length + 2)
+await shot('e2e-draw')
+await page.keyboard.press('Escape')
+check('Esc заканчивает рисование', (await page.evaluate(() => window.__maket.interact.drawing)) === false)
+await page.keyboard.press('Control+z')
+await page.keyboard.press('Control+z')
+check('нарисованные комнаты отменяются по одной', (await state()).rooms.length === roomsWere.length)
+await page.evaluate(() => window.__maket.stage.setView('3d', true))
+await page.waitForTimeout(500)
+
 // 9в. план квартиры: загрузить картинку, задать масштаб по двум точкам, подвинуть, сохранить в проекте
 const planOf = () => page.evaluate(() => window.__maket.store.doc.scene.underlay)
 await page.keyboard.press('Escape')

@@ -36,6 +36,7 @@ export const ICON = {
   copy: svg('<rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a1 1 0 0 1 1-1h9"/>'),
   trash: svg('<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>'),
   plus: svg('<path d="M12 5v14M5 12h14"/>'),
+  pen: svg('<path d="M4 20l4-1L19 8l-3-3L5 16z"/><path d="M14 7l3 3"/>'),
   flip: svg('<path d="M12 3v18"/><path d="M8 7 3 17h5z"/><path d="M16 7l5 10h-5z"/>'),
   close: svg('<path d="M6 6l12 12M18 6 6 18"/>'),
   door: svg('<path d="M6 21V3h9l3 2v16"/><path d="M4 21h16"/><path d="M14 12h.01"/>', 34),

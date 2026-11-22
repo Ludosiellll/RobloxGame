@@ -4,11 +4,11 @@ import * as THREE from 'three'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js'
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
-import { addItem, addOpening, duplicateItem, LIMITS, removeItem, removeOpening, removeRoom, setUnderlay, updateItem, updateOpening, updateRoom, updateUnderlay, type Doc, type ItemSrc, type Room } from '../core/doc'
+import { addItem, addOpening, addRoom, duplicateItem, LIMITS, removeItem, removeOpening, removeRoom, setUnderlay, updateItem, updateOpening, updateRoom, updateUnderlay, type Doc, type ItemSrc, type Room } from '../core/doc'
 import { clampToRoom, footprint, snap, wallSnap } from '../core/geom'
 import { fmt, tr } from '../core/i18n'
 import { underlayContains, underlaySize } from '../core/underlay'
-import { roomAt, snapOpening } from '../core/walls'
+import { roomAt, roomFromDrag, snapOpening } from '../core/walls'
 import type { Store } from '../store'
 import { WALL_T, type RoomsView } from './rooms'
 import type { Stage } from './stage'
@@ -25,6 +25,7 @@ type Drag =
   | { kind: 'roomMove'; id: string; px: number; pz: number; room: Room; items: { id: string; x: number; z: number }[]; openings: { id: string; x: number; z: number }[]; moved: boolean }
   | { kind: 'roomEdge'; id: string; edge: Edge; moved: boolean }
   | { kind: 'underlay'; ox: number; oz: number; moved: boolean }
+  | { kind: 'draw'; a: { x: number; z: number }; rect: ReturnType<typeof roomFromDrag> | null; moved: boolean }
 
 type P = { x: number; z: number }
 
@@ -42,6 +43,10 @@ export class Interact {
   private readonly calibDots: THREE.Mesh[] = []
   /** вызывается, когда меняется состояние разметки масштаба */
   onCalibration: () => void = () => {}
+  /** рисование комнат: пока включено, нажатие и протяжка по коврику создают комнату */
+  private drawOn = false
+  /** вызывается, когда рисование комнат включается или выключается */
+  onDrawing: () => void = () => {}
 
   constructor(
     private readonly stage: Stage,
@@ -92,6 +97,7 @@ export class Interact {
     stage.onFrame(() => this.refreshOverlay())
     store.on(() => {
       if (this.calib && this.store.selection?.kind !== 'underlay') this.stopCalibration()
+      if (this.drawOn && this.store.selection) this.stopDrawing()
       this.rebuildOutline()
       stage.invalidate()
     })
@@ -113,6 +119,13 @@ export class Interact {
   private onDown(e: PointerEvent): void {
     if (e.button !== 0 && e.pointerType === 'mouse') return
     this.down = { x: e.clientX, y: e.clientY }
+    // рисование комнаты: первый угол — там, где нажали
+    if (this.drawOn) {
+      const p = this.floorPoint(e)
+      if (!p) return
+      this.drag = { kind: 'draw', a: { x: p.x, z: p.z }, rect: null, moved: false }
+      return this.capture(e)
+    }
     const rc = this.cast(e)
     const sel = this.store.selection
 
@@ -186,7 +199,8 @@ export class Interact {
     else if (d.kind === 'opening') this.dragOpening(d, e)
     else if (d.kind === 'roomMove') this.dragRoom(d, e)
     else if (d.kind === 'roomEdge') this.dragEdge(d, e)
-    else this.dragUnderlay(d, e)
+    else if (d.kind === 'underlay') this.dragUnderlay(d, e)
+    else this.dragDraw(d, e)
   }
 
   private onUp(e: PointerEvent): void {
@@ -196,6 +210,10 @@ export class Interact {
       this.drag = null
       this.pointerId = null
       this.stage.controls.enabled = true
+      if (d.kind === 'draw') {
+        this.down = null
+        return this.finishDraw(d)
+      }
       if (d.moved || (d.kind === 'item' && d.fresh)) this.store.commit()
       this.down = null
       // по плану щёлкнули, а не потащили его: выбрать то, что под указателем
@@ -206,7 +224,7 @@ export class Interact {
     if (!this.down || e.target !== this.stage.renderer.domElement) return
     const moved = Math.hypot(e.clientX - this.down.x, e.clientY - this.down.y)
     this.down = null
-    if (moved > 5) return
+    if (moved > 5 || this.drawOn) return
     if (this.calib) {
       const p = this.floorPoint(e, UNDERLAY_Y)
       if (p) this.addCalibrationPoint({ x: p.x, z: p.z })
@@ -230,6 +248,59 @@ export class Interact {
     this.store.select(under && p && underlayContains(under, p) ? { kind: 'underlay', id: 'underlay' } : null)
   }
 
+  // ---------- рисование комнаты ----------
+
+  get drawing(): boolean {
+    return this.drawOn
+  }
+
+  startDrawing(): void {
+    this.stopCalibration()
+    this.store.select(null)
+    this.drawOn = true
+    this.stage.renderer.domElement.style.cursor = 'crosshair'
+    this.onDrawing()
+  }
+
+  stopDrawing(): void {
+    if (!this.drawOn) return
+    this.drawOn = false
+    this.stage.renderer.domElement.style.cursor = ''
+    this.outline.visible = false
+    this.setTags([])
+    this.stage.invalidate()
+    this.onDrawing()
+  }
+
+  /** Пока тянут: рамка будущей комнаты и её размеры. */
+  private dragDraw(d: Extract<Drag, { kind: 'draw' }>, e: PointerEvent): void {
+    const p = this.floorPoint(e)
+    if (!p) return
+    const r = roomFromDrag(d.a, { x: p.x, z: p.z }, this.store.doc.rooms)
+    d.rect = r
+    this.setBox(new THREE.Vector3(r.x - r.w / 2, 0.04, r.z - r.d / 2), new THREE.Vector3(r.x + r.w / 2, 0.04, r.z + r.d / 2))
+    this.outline.position.set(0, 0, 0)
+    this.outline.rotation.set(0, 0, 0)
+    this.outline.visible = true
+    const lang = this.store.lang
+    this.setTags([
+      { text: `${fmt(lang, r.w)} ${tr(lang, 'm')}`, at: new THREE.Vector3(r.x, 0.05, r.z + r.d / 2 + 0.38) },
+      { text: `${fmt(lang, r.d)} ${tr(lang, 'm')}`, at: new THREE.Vector3(r.x + r.w / 2 + 0.5, 0.05, r.z) },
+    ])
+    this.stage.invalidate()
+  }
+
+  private finishDraw(d: Extract<Drag, { kind: 'draw' }>): void {
+    this.outline.visible = false
+    this.setTags([])
+    this.stage.invalidate()
+    const r = d.rect
+    if (!d.moved || !r) return
+    if (!r.ok) return this.toast(tr(this.store.lang, 'drawRoomSmall'))
+    const id = this.store.newId('r')
+    this.store.update((doc) => addRoom(doc, id, { x: r.x, z: r.z, w: r.w, d: r.d }))
+  }
+
   // ---------- масштаб плана по двум точкам ----------
 
   get calibration(): { points: P[] } | null {
@@ -237,6 +308,7 @@ export class Interact {
   }
 
   startCalibration(): void {
+    this.stopDrawing()
     this.calib = { points: [] }
     this.calibrationChanged()
   }
@@ -485,7 +557,8 @@ export class Interact {
     } else if (e.code === 'KeyR' && !mod) {
       this.rotateSelected(e.shiftKey ? -90 : 90)
     } else if (e.code === 'Escape') {
-      if (this.calib) this.stopCalibration()
+      if (this.drawOn) this.stopDrawing()
+      else if (this.calib) this.stopCalibration()
       else this.store.select(null)
     } else if (e.code.startsWith('Arrow')) {
       const sel = this.store.selection

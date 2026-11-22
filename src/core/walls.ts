@@ -1,6 +1,8 @@
 // Стены из комнат-прямоугольников. Общая грань двух комнат — одна внутренняя стена;
 // грань внутри другой комнаты пропадает (комнаты сливаются в одно пространство).
 
+import { LIMITS } from './doc'
+
 export interface Rect {
   id: string
   /** центр */
@@ -151,4 +153,33 @@ export function wallForOpening(walls: WallSeg[], o: { axis: 'x' | 'z'; x: number
   const c = o.axis === 'x' ? o.z : o.x
   const t = o.axis === 'x' ? o.x : o.z
   return walls.find((w) => w.axis === o.axis && Math.abs(w.c - c) < 0.03 && t - o.width / 2 >= w.a - 1e-3 && t + o.width / 2 <= w.b + 1e-3) ?? null
+}
+
+/** Комната из двух углов, отмеченных мышью: углы встают на сетку и прилипают к краям соседних комнат. ok = false, если она меньше допустимой. */
+export function roomFromDrag(a: { x: number; z: number }, b: { x: number; z: number }, others: Rect[], step = 0.05, stick = 0.15): { x: number; z: number; w: number; d: number; ok: boolean } {
+  const r3 = (v: number) => Math.round(v * 1000) / 1000
+  const grid = (v: number) => Math.round(v / step) * step
+  const xs = others.flatMap((o) => [o.x - o.w / 2, o.x + o.w / 2])
+  const zs = others.flatMap((o) => [o.z - o.d / 2, o.z + o.d / 2])
+  const place = (v: number, edges: number[]) => {
+    let best = grid(v)
+    let bd = stick
+    for (const e of edges) {
+      const d = Math.abs(e - grid(v))
+      if (d < bd) {
+        bd = d
+        best = e
+      }
+    }
+    return best
+  }
+  // второй угол не дальше наибольшей комнаты от первого
+  const reach = (from: number, to: number) => from + Math.sign(to - from) * Math.min(Math.abs(to - from), LIMITS.roomMax)
+  const ax = place(a.x, xs)
+  const az = place(a.z, zs)
+  const bx = reach(ax, place(b.x, xs))
+  const bz = reach(az, place(b.z, zs))
+  const width = r3(Math.abs(bx - ax))
+  const depth = r3(Math.abs(bz - az))
+  return { x: r3((ax + bx) / 2), z: r3((az + bz) / 2), w: width, d: depth, ok: width >= LIMITS.roomMin && depth >= LIMITS.roomMin }
 }

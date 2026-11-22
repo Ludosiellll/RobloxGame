@@ -99,7 +99,8 @@ export class Stage {
 
   private frame(): void {
     const now = performance.now()
-    const dt = Math.min(0.05, (now - this.last) / 1000)
+    // шаг времени ограничен, чтобы после паузы ничего не прыгало, но не так сильно, чтобы на слабой машине смена вида тянулась секундами
+    const dt = Math.min(0.2, (now - this.last) / 1000)
     this.last = now
     if (this.tween) {
       const tw = this.tween

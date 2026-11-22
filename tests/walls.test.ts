@@ -1,5 +1,6 @@
+import { LIMITS } from '../src/core/doc'
 import { describe, expect, it } from 'vitest'
-import { buildWalls, roomAt, snapOpening, wallLowered, type Rect } from '../src/core/walls'
+import { buildWalls, roomAt, snapOpening, wallLowered, type Rect, roomFromDrag } from '../src/core/walls'
 
 // прямоугольник по углам для наглядности тестов
 const rect = (id: string, x0: number, z0: number, x1: number, z1: number): Rect => ({ id, x: (x0 + x1) / 2, z: (z0 + z1) / 2, w: x1 - x0, d: z1 - z0 })
@@ -82,5 +83,34 @@ describe('snapOpening', () => {
   it('returns null far from any wall or when the wall is too short', () => {
     expect(snapOpening(walls, { x: 2, z: 1.5 }, 0.9)).toBe(null)
     expect(snapOpening(buildWalls([rect('s', 0, 0, 0.8, 0.8)]), { x: 0.4, z: 0 }, 0.9)).toBe(null)
+  })
+
+  describe('комната, нарисованная мышью', () => {
+    const other = { id: 'a', x: 0, z: 0, w: 5, d: 4, floor: { kind: 'planks' as const, color: '#c79a6b' } }
+
+    it('два угла дают прямоугольник с привязкой к сетке 5 см', () => {
+      expect(roomFromDrag({ x: 10.02, z: 10.01 }, { x: 13.98, z: 13.02 }, [])).toEqual({ x: 12, z: 11.5, w: 4, d: 3, ok: true })
+    })
+
+    it('тянуть можно в любую сторону', () => {
+      expect(roomFromDrag({ x: 13.98, z: 13.02 }, { x: 10.02, z: 10.01 }, [])).toEqual({ x: 12, z: 11.5, w: 4, d: 3, ok: true })
+    })
+
+    it('слишком маленький прямоугольник комнатой не становится', () => {
+      const r = roomFromDrag({ x: 10, z: 10 }, { x: 10.6, z: 13 }, [])
+      expect(r.ok).toBe(false)
+      expect(r.w).toBeCloseTo(0.6)
+    })
+
+    it('слишком большой обрезается до наибольшей комнаты от первого угла', () => {
+      const r = roomFromDrag({ x: 20, z: 20 }, { x: -30, z: 60 }, [])
+      expect(r).toEqual({ x: 20 - LIMITS.roomMax / 2, z: 20 + LIMITS.roomMax / 2, w: LIMITS.roomMax, d: LIMITS.roomMax, ok: true })
+    })
+
+    it('края прилипают к краям соседних комнат', () => {
+      // соседняя комната занимает x от -2,5 до 2,5 и z от -2 до 2
+      const r = roomFromDrag({ x: 2.58, z: -1.93 }, { x: 6, z: 2.11 }, [other])
+      expect(r).toEqual({ x: 4.25, z: 0, w: 3.5, d: 4, ok: true })
+    })
   })
 })

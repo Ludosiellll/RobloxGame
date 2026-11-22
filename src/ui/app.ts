@@ -87,6 +87,7 @@ export class Ui {
       if (file) void this.loadPlan(file)
     })
     d.interact.onCalibration = () => this.renderInspector()
+    d.interact.onDrawing = () => this.renderInspector()
     // Ctrl+S — проект в файл, Ctrl+O — открыть файл проекта
     window.addEventListener('keydown', (e) => {
       if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return
@@ -403,7 +404,7 @@ export class Ui {
     const sel = store.selection
     const doc = store.doc
     let sig = `${store.lang}|${sel?.kind ?? 'scene'}|${sel?.id ?? ''}`
-    if (!sel) sig += `|${doc.rooms.map((r) => r.id).join(',')}|${this.confirmReset}|${doc.scene.underlay !== null}`
+    if (!sel) sig += `|${doc.rooms.map((r) => r.id).join(',')}|${this.confirmReset}|${doc.scene.underlay !== null}|${this.d.interact.drawing}`
     if (sel?.kind === 'underlay') sig += `|${this.d.interact.calibration?.points.length ?? 'off'}`
     if (sel?.kind === 'item') sig += `|${items.template(sel.id)?.slots.join(',') ?? '…'}`
     if (sel?.kind === 'room') sig += `|${doc.rooms.length}`
@@ -497,6 +498,11 @@ export class Ui {
       store.select({ kind: 'room', id })
     } }, h('span', { html: ICON.plus }), this.t('addRoom'))
 
+    // комнату можно добавить готовой или нарисовать мышью (в том числе поверх плана квартиры)
+    const roomTools = interact.drawing
+      ? h('div', { class: 'confirm' }, h('p', {}, this.t('drawRoomHint')), h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-tape', type: 'button', id: 'draw-done', onclick: () => interact.stopDrawing() }, this.t('drawRoomDone'))))
+      : h('div', { class: 'btn-row' }, addRoomBtn, h('button', { class: 'btn with-icon', type: 'button', id: 'draw-room', onclick: () => { this.d.stage.setView('plan'); interact.startDrawing() } }, h('span', { html: ICON.pen }), this.t('drawRoom')))
+
     const project = this.confirmReset
       ? h('div', { class: 'confirm' }, h('p', {}, this.t('startOverConfirm')), h('div', { class: 'btn-row' },
           h('button', { class: 'btn btn-danger', type: 'button', onclick: () => { this.confirmReset = false; store.replace(defaultDoc()); this.d.stage.setView('3d') } }, this.t('startOverYes')),
@@ -526,7 +532,7 @@ export class Ui {
         this.slider({ id: 'f-wallh', label: this.t('wallHeight'), min: LIMITS.hMin, max: LIMITS.hMax, step: 0.05, get: (d) => d.walls.h, set: (v) => store.update((d) => setWalls(d, { h: v }), true), show: (v) => `${fmt(lang, v)} ${this.t('m')}` }),
         this.chip(this.t('wallColor'), (d) => d.walls.color, (hex) => store.update((d) => setWalls(d, { color: hex }))),
       ),
-      this.section(this.t('rooms'), ...roomRows, addRoomBtn),
+      this.section(this.t('rooms'), ...roomRows, roomTools),
       this.section(this.t('plan'), ...plan),
       this.section(this.t('project'), project, h('button', { class: 'btn lang-inline', type: 'button', onclick: () => store.setLang(lang === 'ru' ? 'en' : 'ru') }, this.t('language'))),
     ]
@@ -576,6 +582,7 @@ export class Ui {
       ),
       this.section(this.t('planPlace'),
         h('p', { class: 'hint' }, this.t('planMoveHint')),
+        h('button', { class: 'btn with-icon', type: 'button', id: 'draw-on-plan', onclick: () => { this.d.stage.setView('plan'); interact.startDrawing() } }, h('span', { html: ICON.pen }), this.t('drawRoomOnPlan')),
         h('button', { class: 'btn btn-danger', type: 'button', id: 'plan-remove', onclick: () => interact.deleteSelected() }, this.t('planRemove'))),
     ]
   }
