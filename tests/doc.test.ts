@@ -72,6 +72,14 @@ describe('doc', () => {
     expect(removeRoom(d, d.rooms[0].id).rooms.length).toBe(1)
   })
 
+  it('resizing a room by one edge keeps the opposite wall exactly in place', () => {
+    // западная стена едет с −3 на −4,05; восточная стена должна остаться на 2,4
+    const d = updateRoom(addRoom(defaultDoc(), 'r2', { x: -0.3, z: 0, w: 5.4, d: 4.4 }), 'r2', { x: (-4.05 + 2.4) / 2, w: 2.4 + 4.05 })
+    const r = d.rooms[1]
+    expect(r.x + r.w / 2).toBeCloseTo(2.4, 9)
+    expect(r.x - r.w / 2).toBeCloseTo(-4.05, 9)
+  })
+
   it('walls: height is clamped, bad colours ignored', () => {
     const d = setWalls(defaultDoc(), { h: 9, color: 'red' })
     expect(d.walls.h).toBe(4)

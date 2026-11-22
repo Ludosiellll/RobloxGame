@@ -23,6 +23,8 @@ interface WallView {
   pieces: Piece[]
   /** рамы, полотна, стёкла: видны только при поднятой стене */
   extras: THREE.Object3D[]
+  /** мишени для выбора проёмов: при опущенной стене прижимаются к полу */
+  targets: { mesh: THREE.Mesh; y0: number; top: number }[]
   /** текущая видимая высота */
   h: number
 }
@@ -107,7 +109,7 @@ export class RoomsView {
     }
 
     this.walls = this.segs.map((seg) => {
-      const view: WallView = { seg, pieces: [], extras: [], h: previous.get(segKey(seg)) ?? doc.walls.h }
+      const view: WallView = { seg, pieces: [], extras: [], targets: [], h: previous.get(segKey(seg)) ?? doc.walls.h }
       const openings = (byWall.get(seg) ?? []).slice().sort((p, q) => along(seg, p) - along(seg, q))
       // стена удлиняется на половину толщины, чтобы закрыть углы
       let cursor = seg.a - WALL_T / 2
@@ -204,6 +206,7 @@ export class RoomsView {
     target.userData.ownMaterial = true
     this.group.add(target)
     this.openingTargets.push(target)
+    view.targets.push({ mesh: target, y0, top })
   }
 
   /** Высота стены, к которой она стремится при текущем положении камеры. */
@@ -227,6 +230,12 @@ export class RoomsView {
       }
       const up = w.h > this.wallH - 0.35
       for (const e of w.extras) e.visible = up
+      // у опущенной стены проём выбирается по зазору у пола, а не по невидимой двери в воздухе
+      for (const t of w.targets) {
+        const low = w.h < t.top
+        t.mesh.position.y = low ? 0 : t.y0
+        t.mesh.scale.y = low ? Math.max(LOW, Math.min(w.h, 0.3)) : t.top - t.y0
+      }
     }
     return moving
   }

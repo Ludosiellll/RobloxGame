@@ -114,6 +114,7 @@ button { cursor: pointer; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .btn-row .btn { flex: 1 1 auto; }
 .confirm p { margin: 0 0 10px; }
+.lang-inline { display: none; }
 
 /* ---------- каталог ---------- */
 .tray { position: absolute; left: var(--side-l); right: calc(var(--side-r) + var(--insp-w) + 12px); bottom: var(--gap); z-index: 10; min-width: 0; }
@@ -175,11 +176,13 @@ button { cursor: pointer; }
 
 /* ---------- телефон ---------- */
 @media (max-width: 760px) {
-  :root { --gap: 8px; --side-l: max(8px, env(safe-area-inset-left, 0px)); --side-r: max(8px, env(safe-area-inset-right, 0px)); }
+  :root { --gap: 8px; }
+  .top .lang { display: none; }
   .tape { font-size: 17px; padding: 7px 10px 6px 13px; }
   .tape-wrap { margin-right: 2px; }
   .top-left, .top-right { gap: 5px; }
   .btn-text { display: none !important; }
+  .lang-inline { display: inline-flex; }
   .seg-btn { padding: 0 8px; }
   .tray { right: var(--side-r); }
   .tray-toggle { display: grid; }
@@ -189,8 +192,11 @@ button { cursor: pointer; }
   .thumb { width: 64px; height: 64px; background-size: auto; }
   .inspector { top: auto; left: var(--side-l); right: var(--side-r); bottom: 176px; width: auto; max-height: 38%; }
   .tray.is-closed ~ .inspector, .inspector.above-closed { bottom: 56px; }
-  .inspector.is-min { max-height: 50px; overflow: hidden; }
+  .inspector.is-min { max-height: 48px; overflow: hidden; }
+  .inspector.is-min .insp-head { cursor: pointer; }
+  .insp-head { padding: 12px 8px 10px 14px; }
   .fan, .help { top: auto; bottom: 8px; left: var(--side-l); right: var(--side-r); width: auto; max-width: none; }
+  .fan-stage { height: 214px; }
   .toasts { right: 0; bottom: auto; top: 62px; }
   .dropzone { font-size: 18px; }
 }

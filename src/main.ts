@@ -55,6 +55,12 @@ async function start(): Promise<void> {
   document.documentElement.lang = store.lang
   store.on((c) => c === 'lang' && (document.documentElement.lang = store.lang))
 
+  // цифры на коврике рисуются шрифтом страницы: перерисовываем, когда он загрузится
+  void document.fonts?.ready.then(() => {
+    stage.mat.refresh(stage.maxAnisotropy)
+    stage.invalidate()
+  })
+
   // для проверочных скриптов
   Object.assign(window, { __maket: { store, stage, interact, items, rooms, ui, userModels, THREE } })
 }

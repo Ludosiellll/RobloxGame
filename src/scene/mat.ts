@@ -80,6 +80,14 @@ float matGrid(vec2 p, float stepM, float px) {
     return this.ground
   }
 
+  /** Перерисовать печать (после загрузки шрифтов). */
+  refresh(maxAnisotropy: number): void {
+    const kind = this.kind
+    if (!kind) return
+    this.kind = null
+    this.setKind(kind, maxAnisotropy)
+  }
+
   setKind(kind: MatKind, maxAnisotropy: number): void {
     if (kind === this.kind) return
     this.kind = kind

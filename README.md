@@ -12,6 +12,8 @@ npm install
 npm test              # тесты логики
 npm run build         # проверка типов и сборка в dist/
 npm run thumbs        # пересобрать превью каталога и размеры моделей
+npm run pack          # склеить модели каталога в один файл
+npm run e2e           # сквозная проверка собранного приложения в браузере
 node scripts/shots.mjs имя [--phone] [--eval "js"]   # снимок собранного приложения
 ```
 
@@ -20,4 +22,4 @@ node scripts/shots.mjs имя [--phone] [--eval "js"]   # снимок собр�
 - `src/core/` — чистая логика без 3D: проект (`doc`), история, геометрия, стены из комнат, каталог, палитра, тексты.
 - `src/scene/` — three.js: сцена и свет, коврик, комнаты, модели, импорт, управление мышью.
 - `src/ui/` — интерфейс: каталог, панель свойств, веер цветов.
-- `public/models/kit/` — модели каталога, `public/models/kit-thumbs.webp` — лист превью.
+- `assets/kit/` — исходные модели каталога; `npm run pack` склеивает их в `public/models/kit.bin`, `npm run thumbs` делает лист превью `public/models/kit-thumbs.webp`.

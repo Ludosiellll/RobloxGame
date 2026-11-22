@@ -138,8 +138,29 @@ export class ModelLibrary {
     return p
   }
 
+  private pack: Promise<Record<string, string>> | null = null
+
+  /** Все модели каталога лежат в одном файле данных: скачиваем его один раз. */
+  private async kitBytes(key: string): Promise<ArrayBuffer> {
+    if (!this.pack) {
+      this.pack = fetch(new URL('models/kit.json', document.baseURI).href)
+        .then((r) => {
+          if (!r.ok) throw new Error(`kit pack: ${r.status}`)
+          return r.json()
+        })
+        .then((data: { models: Record<string, string> }) => data.models)
+      this.pack.catch(() => (this.pack = null))
+    }
+    const b64 = (await this.pack)[key]
+    if (!b64) throw new Error(`unknown kit model ${key}`)
+    const bin = atob(b64)
+    const bytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+    return bytes.buffer
+  }
+
   private async loadKit(key: string): Promise<Template> {
-    const gltf = await this.loader.loadAsync(new URL(`models/kit/${key}.glb`, document.baseURI).href)
+    const gltf = await this.loader.parseAsync(await this.kitBytes(key), '')
     const { slots, base } = nameSlots(gltf.scene)
     tuneKitMaterials(gltf.scene)
     const { root, size } = normalize(gltf.scene, KIT_SCALE)

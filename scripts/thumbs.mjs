@@ -14,7 +14,7 @@ const KIT_SCALE = 2.1
 const TILE = 128
 const COLS = 12
 
-const keys = readdirSync(join(ROOT, 'public/models/kit')).filter((f) => f.endsWith('.glb')).map((f) => f.slice(0, -4)).sort()
+const keys = readdirSync(join(ROOT, 'assets/kit')).filter((f) => f.endsWith('.glb')).map((f) => f.slice(0, -4)).sort()
 const { server, url } = await serve(ROOT)
 const browser = await chromium.launch({ args: GL_ARGS })
 const page = await browser.newPage()
@@ -43,7 +43,7 @@ const result = await page.evaluate(async ({ keys, base, TILE, COLS, KIT_SCALE })
   const ctx = atlas.getContext('2d')
   const data = {}
   for (let i = 0; i < keys.length; i++) {
-    const gltf = await loader.loadAsync(`${base}public/models/kit/${keys[i]}.glb`)
+    const gltf = await loader.loadAsync(`${base}assets/kit/${keys[i]}.glb`)
     const obj = gltf.scene
     scene.add(obj)
     const box = new THREE.Box3().setFromObject(obj)

@@ -122,13 +122,16 @@ export function setItemColor(doc: Doc, id: string, slot: string, hex: string | n
 
 const r2 = (v: number) => Math.round(v * 100) / 100
 
+// центр комнаты — до миллиметра: при шаге стен 5 см он попадает на 2,5 см, и округление до сантиметра сдвигало бы стену
+const r3 = (v: number) => Math.round(v * 1000) / 1000
+
 function cleanRoom(r: Room): Room {
   return {
     ...r,
-    x: r2(r.x),
-    z: r2(r.z),
-    w: r2(clamp(r.w, LIMITS.roomMin, LIMITS.roomMax)),
-    d: r2(clamp(r.d, LIMITS.roomMin, LIMITS.roomMax)),
+    x: r3(r.x),
+    z: r3(r.z),
+    w: r3(clamp(r.w, LIMITS.roomMin, LIMITS.roomMax)),
+    d: r3(clamp(r.d, LIMITS.roomMin, LIMITS.roomMax)),
     floor: { kind: FLOOR_KINDS.includes(r.floor.kind) ? r.floor.kind : DEFAULT_FLOOR.kind, color: isHex(r.floor.color) ? r.floor.color : DEFAULT_FLOOR.color },
   }
 }

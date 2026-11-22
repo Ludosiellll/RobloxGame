@@ -119,6 +119,11 @@ export class Stage {
     const h = Math.max(1, this.host.clientHeight)
     this.renderer.setSize(w, h)
     this.camera.aspect = w / h
+    // сдвигаем кадр, чтобы центр сцены был в свободной части экрана, а не под панелями
+    const phone = w <= 760
+    const right = phone ? 0 : 304
+    const bottom = phone ? Math.min(230, h * 0.3) : 150
+    this.camera.setViewOffset(w, h, right / 2, bottom / 2, w, h)
     this.camera.updateProjectionMatrix()
     this.invalidate()
   }
@@ -233,12 +238,13 @@ export class Stage {
     this.overlay.visible = false
     this.renderer.setPixelRatio(Math.min(3, Math.max(pr, scale)))
     this.renderer.setSize(w, h)
+    this.camera.clearViewOffset()
+    this.camera.updateProjectionMatrix()
     this.renderer.render(this.scene, this.camera)
     const blob = await new Promise<Blob | null>((resolve) => el.toBlob(resolve, 'image/png'))
     this.overlay.visible = overlayWas
     this.renderer.setPixelRatio(pr)
-    this.renderer.setSize(w, h)
-    this.invalidate()
+    this.resize()
     return blob
   }
 }

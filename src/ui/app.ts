@@ -56,6 +56,7 @@ export class Ui {
   private signature = ''
   private confirmReset = false
   private trayOpen = true
+  private sceneOpen = false
 
   constructor(root: HTMLElement, private readonly d: UiDeps) {
     this.fan = new FanDeck(() => d.store.lang)
@@ -312,6 +313,8 @@ export class Ui {
       this.inspector.replaceChildren(...body)
       this.inspector.scrollTop = 0
     }
+    // на телефоне панель сцены свёрнута до заголовка, пока её не открыли или что-то не выбрали
+    this.inspector.classList.toggle('is-min', !sel && !this.sceneOpen)
     for (const c of this.controls) c.sync?.(doc)
   }
 
@@ -365,7 +368,7 @@ export class Ui {
     const { store } = this.d
     return h(
       'header',
-      { class: 'insp-head' },
+      { class: 'insp-head', onclick: () => { if (!store.selection) { this.sceneOpen = !this.sceneOpen; this.renderInspector() } } },
       h('div', {}, h('h2', {}, title), sub ? h('div', { class: 'sub' }, sub) : null),
       store.selection ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': this.t('cancel'), html: ICON.close, onclick: () => store.select(null) }) : null,
     )
@@ -413,7 +416,7 @@ export class Ui {
         this.chip(this.t('wallColor'), (d) => d.walls.color, (hex) => store.update((d) => setWalls(d, { color: hex }))),
       ),
       this.section(this.t('rooms'), ...roomRows, addRoomBtn),
-      this.section(this.t('project'), project),
+      this.section(this.t('project'), project, h('button', { class: 'btn lang-inline', type: 'button', onclick: () => store.setLang(lang === 'ru' ? 'en' : 'ru') }, this.t('language'))),
     ]
   }
 

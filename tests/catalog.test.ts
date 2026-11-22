@@ -1,15 +1,24 @@
-import { readdirSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { CATEGORIES, KIT, KIT_THUMB, SLOT_NAMES } from '../src/core/catalog'
 
 describe('catalog', () => {
-  const files = readdirSync('public/models/kit').filter((f) => f.endsWith('.glb')).map((f) => f.slice(0, -4))
+  const files = readdirSync('assets/kit').filter((f) => f.endsWith('.glb')).map((f) => f.slice(0, -4))
 
   it('every model file is in the catalog exactly once', () => {
     const keys = KIT.map((k) => k.key)
     expect(new Set(keys).size).toBe(keys.length)
     expect([...keys].sort()).toEqual([...files].sort())
     expect(KIT_THUMB.count).toBe(files.length)
+  })
+
+  it('the model pack holds every catalog model, byte for byte', () => {
+    const pack = JSON.parse(readFileSync('public/models/kit.json', 'utf8')) as { models: Record<string, string> }
+    expect(Object.keys(pack.models).sort()).toEqual([...files].sort())
+    for (const k of KIT) {
+      const packed = Buffer.from(pack.models[k.key], 'base64')
+      expect(packed.equals(readFileSync(`assets/kit/${k.key}.glb`)), k.key).toBe(true)
+    }
   })
 
   it('every item has names, a known category and a real size', () => {
